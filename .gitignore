@@ -182,3 +182,5 @@ cython_debug/
 
 data/*
 !data/PLACE_DATA_HERE.txt
+
+out/*

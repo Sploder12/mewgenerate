@@ -1,3 +1,6 @@
+# this file is for parsing all the buffs and debuffs in the game
+# this includes ones that aren't for cats as well (brittle, fragile, cursed, etc.)
+
 from . import parse_csv as csv
 from . import parse_gon as gon
 
@@ -35,8 +38,8 @@ class Keyword:
         self.negative = None
         self.referenceApplier = None
 
-        comments = []
-        aliasOf = "" # if this is populated nothing else will be (except maybe comments)
+        self.comments = []
+        self.aliasOf = "" # if this is populated nothing else will be (except maybe comments)
 
     def is_alias(self) -> bool:
         return self.aliasOf != ""
