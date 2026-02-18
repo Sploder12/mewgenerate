@@ -3,7 +3,7 @@
 # see https://open-flash.github.io/mirrors/swf-spec-19.pdf for assistance
 
 # twip = 1/20th of a pixel
-# swf files are big-endian
+# swf files are little-endian
 
 import io
 import math
