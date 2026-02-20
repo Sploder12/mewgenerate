@@ -72,7 +72,7 @@ class Table:
                 shutil.copyfile(entry.imagePath, newPath)
             except FileNotFoundError:
                 print(f"WARNING: INVALID MUTATION PART {id}, {entry.name}")
-                filename = f"Mutation_{self.part.lower()}.703.svg"
+                filename = f"Mutation_{self.part.lower()}.{id}.svg"
                 
             out += f"| [[File:{filename}]] || {entry.name} ||\n"
             

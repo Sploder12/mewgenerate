@@ -73,7 +73,7 @@ class GON:
             if (not inStr and not inComment and not inMultilineComment):
                 # great liberty was taken in rearranging this part
                 symbol = GON.is_symbol(char)
-                comment = char == '/' and i + 1 < len(data) and data[i + 1] == '/'
+                comment = char == '#' or (char == '/' and i + 1 < len(data) and data[i + 1] == '/')
                 multilineComment = char == '/' and i + 1 < len(data) and data[i + 1] == '*'
                 string = char == '"'
 
@@ -83,10 +83,11 @@ class GON:
                         curToken = ""
 
                     if (symbol and not GON.is_ignored_symbol(char)):
-                        curToken += char
+                        # symbol must be 1 char!
+                        tokens.append(char)
                     elif (comment):
                         inComment = True
-                        i += 1
+                        i += int(char == '/')
                     elif (multilineComment):
                         inMultilineComment = True
                         i += 1
@@ -96,6 +97,7 @@ class GON:
                     continue
 
                 curToken += char
+                continue
 
             if (inStr):
                 if (escaped):
