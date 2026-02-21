@@ -3,6 +3,7 @@
 # bottom is (0, 0), top is (9, 9)
 # right is (9, 0), left is (0, 9)
 import struct
+from typing import Any
 
 # needed for finding ids
 from . import parse_gon as gon
@@ -15,10 +16,10 @@ class Level:
 
         @staticmethod
         def structStr():
-            return "<HHI"
+            return "<hhhH"
 
         def __init__(self, data: bytes):
-            self.x, self.y, self.id = struct.unpack(self.structStr(), data)
+            self.x, self.y, self.id, self.special = struct.unpack(self.structStr(), data)
 
         def __repr__(self):
             return f"({self.x}, {self.y}): {self.id}"
@@ -93,8 +94,16 @@ class ResolvedLevel:
         def __init__(self, spawnGon, entry: Level.Entry):
             self.x = entry.x
             self.y = entry.y
-            self.id = entry.id
-            self.data = spawnGon.get(str(entry.id))
+
+            # 2 - 10 dont have spawns.gon entries but are mapped to 1
+            self.id = entry.id if entry.id <= 1 or entry.id > 10 else 1
+
+            self.data = spawnGon.get(str(self.id))
+            if (self.data != None):
+                self.data["variation"] = entry.special
+
+                if (self.id != entry.id):
+                    self.data["original_id"] = entry.id
 
         def __repr__(self):
             return f"({self.x}, {self.y}): {self.data}"
@@ -111,6 +120,20 @@ class ResolvedLevel:
 
         for tile in level.tiles:
             self.tiles.append((tile, tilesGon.get(str(tile))))
+
+    def get_unique_objects(self) -> dict[int, Any]:
+        out = {}
+        for obj in self.spawns:
+            out[obj.id] = obj.data
+
+        return out  
+
+    def get_unique_tiles(self)-> dict[int, str]:
+        out = {}
+        for tile in self.tiles:
+            out[tile[0]] = tile[1]  
+
+        return out
 
 
 def parse_lvl(filename: str) -> Level:

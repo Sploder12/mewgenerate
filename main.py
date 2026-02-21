@@ -15,8 +15,12 @@ os.makedirs("./out", exist_ok=True)
 os.makedirs("./out/icons", exist_ok=True)
 os.makedirs("./out/furniture", exist_ok=True)
 os.makedirs("./out/enemies", exist_ok=True)
+os.makedirs("./out/enemies2", exist_ok=True)
+os.makedirs("./out/enemies3", exist_ok=True)
+os.makedirs("./out/enemies4", exist_ok=True)
 os.makedirs("./out/catparts", exist_ok=True)
 os.makedirs("./out/abilities", exist_ok=True)
+os.makedirs("./out/levels/computed", exist_ok=True)
 
 ffdecPath = "C:/Program Files (x86)/FFDec/ffdec-cli.exe"
 
@@ -44,13 +48,12 @@ for dir in dirs:
             shutil.copyfile(p, f"./out/icons/{fname}")
 
 
-FURNITURE_SWF = "./data/swfs/enemies.swf"
+FURNITURE_SWF = "./data/swfs/enemies4.swf"
 
 dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, FURNITURE_SWF, ffdec.SWF_DUMP_DIR)
 
 dirs = os.listdir(dumpdir)
 for dir in dirs:
-    break
     fullPath = os.path.join(dumpdir, dir)
     if (os.path.isdir(fullPath)) and dir.startswith("DefineSprite"):
         name = '_'.join(dir.split('_')[2:])
@@ -62,7 +65,7 @@ for dir in dirs:
             p = os.path.join(fullPath, file)
             fname = name + "_" + file
 
-            shutil.copyfile(p, f"./out/enemies/{fname}")
+            shutil.copyfile(p, f"./out/enemies4/{fname}")
 
 ICONS_SWF = "./data/swfs/ability_icons.swf"
 
@@ -85,6 +88,9 @@ for dir in dirs:
             shutil.copyfile(p, f"./out/abilities/{fname}")
 
 
+areaObjs = {}
+objsArea = {}
+
 import json
 for root, dirs, files in os.walk("./data/levels"):
     for file in files:
@@ -97,6 +103,18 @@ for root, dirs, files in os.walk("./data/levels"):
         levl = lvl.parsed_lvl_resolved(full_path)
 
         outpath = "./out/" + full_path.removeprefix("./data/").removesuffix(".lvl") + ".json"
+
+        area = root.removeprefix("./data/levels\\").split('\\')[0]
+        if (not area.endswith('.json') and '/' not in area):
+            objs = levl.get_unique_objects()
+            areaObjs.setdefault(area, dict()).update(objs)
+
+            for obj in objs.items():
+                objsArea.setdefault(obj[0], {"data": obj[1]}).setdefault("areas", [])
+
+                if (area not in objsArea[obj[0]]["areas"]):
+                    objsArea[obj[0]]["areas"].append(area)
+
 
         tiles = []
         for y in range(10):
@@ -114,5 +132,8 @@ for root, dirs, files in os.walk("./data/levels"):
         with open(outpath, "w") as jfile:
             jfile.write(json.dumps(data, indent=4))
 
+with open("./out/levels/computed/areaObjs.json", "w") as jfile:
+    jfile.write(json.dumps(areaObjs, indent=4))
 
-
+with open("./out/levels/computed/objsArea.json", "w") as jfile:
+    jfile.write(json.dumps(objsArea, indent=4))
