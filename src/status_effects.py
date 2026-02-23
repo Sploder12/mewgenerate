@@ -1,8 +1,8 @@
 # this file is for parsing all the buffs and debuffs in the game
 # this includes ones that aren't for cats as well (brittle, fragile, cursed, etc.)
 
-from . import parse_csv as csv
-from . import parse_gon as gon
+from .util import parse_csv as csv
+from .util import parse_gon as gon
 
 class Tooltip:
     name: str

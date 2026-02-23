@@ -65,7 +65,11 @@ class Rect:
         self.ymax = 0
 
 class SWF:
+    SHOW_FRAME = 1
+    PLACE_OBJECT2 = 26
     DEFINE_SPRITE = 39
+    FRAME_LABEL = 43
+    SYMBOL_CLASS = 76
 
     class Header:
         compression: str
@@ -95,7 +99,7 @@ class SWF:
 
         def type_to_string(self):
             match (self.type):
-                case 1:
+                case SWF.SHOW_FRAME:
                     return "ShowFrame"
                 case 2:
                     return "DefineShape"
@@ -108,7 +112,7 @@ class SWF:
                 
                 case 22:
                     return "DefineShape2"
-                case 26:
+                case SWF.PLACE_OBJECT2:
                     return "PlaceObject2"
                 case 28:
                     return "RemoveObject2"
@@ -118,14 +122,14 @@ class SWF:
                 case SWF.DEFINE_SPRITE:
                     return "DefineSprite"
                 
-                case 43:
+                case SWF.FRAME_LABEL:
                     return "FrameLabel"    
                 
                 case 69:
                     return "FileAttributes"
                 case 70:
                     return "PlaceObject3"
-                case 76:
+                case SWF.SYMBOL_CLASS:
                     return "SymbolClass"
                 case 82:
                     return "DoABC"
@@ -223,23 +227,73 @@ class DefineSprite:
 
         offset = 4
         while (offset < len(tag.data)):
-            tag, count = SWF.parseTag(tag.data, offset)
+            newtag, count = SWF.parseTag(tag.data, offset)
             assert(count != 0)
 
-            self.tags.append(tag)
+            self.tags.append(newtag)
             offset += count
+
+            if (newtag.type == 0):
+                break
+
+class PlaceObject2:
+    depth: int
+    character: int | None
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type != SWF.PLACE_OBJECT2):
+            raise TypeError("tag is not a PlaceObject2 tag")
+        
+        flags = struct.unpack_from("<B", tag.data)[0]
+        offset = 1
+
+        self.depth = struct.unpack_from("<H", tag.data, offset)[0]
+        offset += 2
+
+        self.character = None
+        if flags & 0b00000010 > 0:
+            self.character = struct.unpack_from("<H", tag.data, offset)[0]
+            offset += 2
+
+        # ignoring matrix and whatnot because it scares me. (and is not needed for our uses)
+
+class FrameLabel:
+    label: str
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type != SWF.FRAME_LABEL):
+            raise TypeError("tag is not a FrameLabel tag")
+
+        self.label = tag.data[:-1].decode("utf-8")
+
+class SymbolClass:
+    symbols: list[tuple[int, str]]
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type != SWF.SYMBOL_CLASS):
+            raise TypeError("tag is not a SymbolClass tag")
+        
+        self.symbols = []
+        
+        count = struct.unpack_from("<H", tag.data)[0]
+        offset = 2
+
+        for _ in range(count):
+            id = struct.unpack_from("<H", tag.data, offset)[0]
+            offset += 2
+
+            start = offset
+            while (tag.data[offset] != 0):
+                offset += 1
+
+            name = tag.data[start:offset].decode("utf-8")
+            offset += 1
+            
+            self.symbols.append((id, name))
+
 
 def parse_swf(filename: str) -> SWF:
     with open(filename, "rb") as file:
         content = file.read()
 
     return SWF(content)
-
-swf = parse_swf("./data/swfs/catparts.swf")
-
-for tag in swf.tags:
-    if (tag.type == SWF.DEFINE_SPRITE):
-        dsprite = DefineSprite(tag)
-        print(dsprite)
-
-print(swf)

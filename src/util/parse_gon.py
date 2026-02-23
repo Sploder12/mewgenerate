@@ -133,6 +133,7 @@ class GON:
                     tokens.append("//" + curToken)
                     curToken = ""
                     inMultilineComment = False
+                    i += 1
                     continue
 
                 curToken += char

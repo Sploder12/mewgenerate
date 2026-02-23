@@ -1,4 +1,4 @@
-import parse_csv as csv
+from .util import parse_csv as csv
 
 from typing import Protocol, Any
 
