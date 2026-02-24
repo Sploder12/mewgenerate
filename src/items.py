@@ -11,6 +11,7 @@ ITEMS_SWF = "./data/swfs/catparts.swf"
 
 ITEMS_FOLDER = "./data/data/items"
 ITEMS_GONS = [
+    "armor_sets.gon",
     "beanies_quest_items.gon",
     "consumables.gon",
     "cursed_items.gon",
@@ -35,6 +36,7 @@ KIND_MAP = {
 
 ITEMS_CSV = "./data/data/text/items.csv"
 ITEMS_TRANSLATIONS = csv.parse_csv(ITEMS_CSV)
+ITEMS_TRANSLATIONS2 = csv.parse_csv("./data/data/text/additions.csv")
 
 class Item:
     variant: str | None
@@ -103,8 +105,24 @@ def exportItems(ffdecPath: str, items: list[Item], outfolder = "./out/items") ->
         src = foldermap.get(item.kind) + f"/{item.frame}.svg"
 
         folder = outfolder + "/" + item.kind
-        out = folder + "/ITEM_" + item.name + ".svg"
 
+        try:
+            en = ITEMS_TRANSLATIONS.get(item.translationID).get()
+        except:
+            en = ITEMS_TRANSLATIONS2.get(item.translationID).get()
+
+        out = folder + "/ITEM " + en + ".svg"
+        if os.path.exists(out):
+            folder += "/dupes/" 
+            os.makedirs(folder, exist_ok=True)
+            shutil.copyfile(out, folder + "/ITEM " + en + ".svg")
+
+            i = 2
+            out = folder + "/ITEM " + en + ' ' + str(i) + ".svg"
+            while os.path.exists(out):
+                i += 1
+                out = folder + "/ITEM " + en + ' ' + str(i) + ".svg"
+            
         os.makedirs(folder, exist_ok=True)
         shutil.copyfile(src, out)
 

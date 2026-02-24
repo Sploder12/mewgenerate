@@ -7,6 +7,8 @@ import src.items as items
 import src.furniture as furniture
 import src.util.ffdec_tools as ffdec
 
+import src.util.svg_tools as svg
+
 import src.util.parse_lvl as lvl
 
 from typing import Any, Tuple
@@ -17,8 +19,6 @@ import shutil
 os.makedirs("./out", exist_ok=True)
 os.makedirs("./out/icons", exist_ok=True)
 os.makedirs("./out/furniture", exist_ok=True)
-os.makedirs("./out/furniture_pngs", exist_ok=True)
-os.makedirs("./out/furniture_frames", exist_ok=True)
 os.makedirs("./out/enemies", exist_ok=True)
 os.makedirs("./out/enemies2", exist_ok=True)
 os.makedirs("./out/enemies3", exist_ok=True)
@@ -29,6 +29,7 @@ os.makedirs("./out/npcs", exist_ok=True)
 os.makedirs("./out/levels/computed", exist_ok=True)
 
 ffdecPath = "C:/Program Files (x86)/FFDec/ffdec-cli.exe"
+inkscapePath = "C:/Program Files/Inkscape/bin/inkscape.com"
 
 with open("./out/mutations.txt", "w") as out:
     out.write(mutations.makeAllTables(ffdecPath))
@@ -56,75 +57,35 @@ for dir in dirs:
 
 items.exportItems(ffdecPath, items.getItems())
 
-furn, furnDir = furniture.getFurniture(ffdecPath)
-dirs = os.listdir(furnDir)
+def doFurniture():
+    furn, furnDir = furniture.getFurniture(ffdecPath)
+    dirs = os.listdir(furnDir)
 
-dirLUT = {}
-for d in dirs:
-    dirLUT[d.split('_')[1]] = d
+    dirLUT = {}
+    for d in dirs:
+        dirLUT[d.split('_')[1]] = d
 
-for name, id in furn.lookup.items():
-    dir = dirLUT.get(str(id))
+    cropper = svg.SvgCropper(inkscapePath)
+    for name, id in furn.lookup.items():
+        dir = dirLUT.get(str(id))
 
-    if dir != None:
-        fullPath = os.path.join(furnDir, dir)
+        if dir != None:
+            fullPath = os.path.join(furnDir, dir)
 
-        outBase = "./out/furniture/FURNITURE_"
-        nlower = name.lower().replace('"', '')
+            outBase = "./out/furniture/FURNITURE "
+            nlower = name.lower().replace('"', '')
 
-        shutil.copyfile(fullPath + "/1.svg", outBase + nlower + ".svg")
+            cropper.crop(fullPath + "/1.svg", outBase + nlower + ".svg")
+            if (os.path.isfile(fullPath + "/2.svg")):
+                cropper.crop(fullPath + "/2.svg", outBase + nlower + " (Rare)" + ".svg")
+            else:
+                print(f"WARNING:furniture {name} has no rare variant!")
+        else:
+            print(f"WARNING: furniture {name} has no associated DefineSprite!")
 
-        try:
-            shutil.copyfile(fullPath + "/2.svg", outBase + "rare_" + nlower + ".svg")
-        except FileNotFoundError:
-            print(f"WARNING:furniture {name} has no rare variant!")
-    else:
-        print(f"WARNING: furniture {name} has no associated DefineSprite!")
+    cropper.finish()
 
-
-FURNITURE_FILES = "./data/furniture_svg_cropped/furniture"
-dirs = os.listdir(FURNITURE_FILES)
-for dir in dirs:
-    fullPath = os.path.join(FURNITURE_FILES, dir)
-    id = int(dir.removesuffix(".svg"))
-
-    
-
-    name = furnitureNameMap.get(id)
-    if (isinstance(name, int)):
-        final = str(name)
-    else:
-        try:
-            tid = fgon.get(name).get("name")
-            final = fcsv.get(tid).get()
-            final = name
-        except AttributeError:
-            final = name
-            print("WARNING: UNUSED NAMED FURNITURE " + name)
-
-    final = final.strip()
-
-    out = "./out/furniture_pngs/FURNITURE_" + final + ".svg"
-    out = out.replace('"', '')
-
-    shutil.copyfile(fullPath, out)
-
-dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, FURNITURE_SWF, ffdec.SWF_DUMP_DIR)
-
-dirs = os.listdir(dumpdir)
-for dir in dirs:
-    fullPath = os.path.join(dumpdir, dir)
-    if (os.path.isdir(fullPath)) and dir.startswith("DefineFrame"):
-        name = '_'.join(dir.split('_')[2:])
-        if (name == ""):
-            name = dir.split('_')[1]
-
-        files = dirs = os.listdir(fullPath)
-        for file in files:
-            p = os.path.join(fullPath, file)
-            fname = name + "_" + file
-
-            shutil.copyfile(p, f"./out/furnite_frames/{fname}")
+doFurniture()
 
 ICONS_SWF = "./data/swfs/ability_icons.swf"
 

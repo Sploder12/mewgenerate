@@ -39,7 +39,8 @@ class Furniture:
             if (frame.type == swf.SWF.FRAME_LABEL):
                 curLabel = swf.FrameLabel(frame).label
             elif (frame.type == swf.SWF.PLACE_OBJECT2):
-                curID = swf.PlaceObject2(frame).character
+                if curID == None: # needed for freaky idols
+                    curID = swf.PlaceObject2(frame).character
             elif (frame.type == swf.SWF.SHOW_FRAME):
                 if curID != None and curLabel != "":
                     self.lookup[curLabel] = curID
