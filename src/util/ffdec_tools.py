@@ -58,13 +58,19 @@ def exportSpritesIfNeeded(ffdecPath: str, swfPath: str, outDir: str = SWF_DUMP_D
             
             
     if (not producing):
-        logging.debug(f"thread waiting on dump for {swfPath}")
+        waited = False
         with cond.cv:
-            while not cond.done:
-                cond.cv.wait()
+            if (not cond.done):
+                waited = True
+                logging.debug(f"thread {threading.get_ident()} waiting on dump for {swfPath}")
+                while not cond.done:
+                    cond.cv.wait()
+        
+        if (waited):
+            logging.debug(f"thread {threading.get_ident()} done waiting on {swfPath}")
 
     else:
-        logging.debug(f"thread dumping {swfPath}")
+        logging.debug(f"thread {threading.get_ident()} dumping {swfPath}")
         with cond.cv:
             if (not FORCE_REDUMP):
                 try:

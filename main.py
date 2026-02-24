@@ -17,27 +17,27 @@ ffdecDefault = "C:/Program Files (x86)/FFDec/ffdec-cli.exe" if os.name == "nt" e
 inkscapeDefault = "C:/Program Files/Inkscape/bin/inkscape.com" if os.name == "nt" else "inkscape"
 outDirDefault = "./out"
 
-def timedExport(name: str, exportFnc, inkscape: str, ffdec: str):
+def timedExport(name: str, exportFnc, inkscape: str, ffdec: str, outdir: str):
     start = datetime.now()
     with svg.SvgCropper(inkscape) as svgCropper:
         logging.info(f"Exporting {name}...")
 
         try:
-            result = exportFnc(svgCropper, ffdec)
+            result = exportFnc(svgCropper, ffdec, outdir)
             delta = datetime.now() - start
             logging.info(f"Exported {result} {name} in {delta.seconds} seconds")
         except Exception as e:
             logging.error(f"Failed to export {name}: {e}")
 
 
-def exportItems(svgCropper: svg.SvgCropper, ffdec: str):
-    return items.exportItems(svgCropper, ffdec, items.getItems())
+def exportItems(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return items.exportItems(svgCropper, ffdec, items.getItems(), outdir)
 
-def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str):
-    return furniture.exportFurniture(svgCropper, ffdec, furniture.getFurniture())
+def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return furniture.exportFurniture(svgCropper, ffdec, furniture.getFurniture(), outdir)
 
-def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str):
-    return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats())
+def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats(), outdir)
 
 VALID_VALUES = {
     "items": exportItems,
@@ -65,6 +65,8 @@ def main():
 
     args = parser.parse_args()
 
+    args.verbose = True
+
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG if args.verbose else logging.INFO)
     if (args.force_redump):
         logging.debug("force-redump=True")
@@ -83,7 +85,7 @@ def main():
             logging.warning(f"{component} is not a valid component")
             continue
 
-        t = threading.Thread(target=timedExport, args=(component, VALID_VALUES[component], args.inkscape, args.ffdec))
+        t = threading.Thread(target=timedExport, args=(component, VALID_VALUES[component], args.inkscape, args.ffdec, args.out_dir))
         t.start()
         threads.append(t)
 
