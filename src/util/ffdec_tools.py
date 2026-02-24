@@ -1,13 +1,18 @@
 import subprocess
 import os
 import pathlib
+import logging
 
-SWF_DUMP_DIR = "./data/swfdump"
+SWF_DUMP_DIR = "./cache/swfdump"
+FORCE_REDUMP = False
 
 # does not adjust outDir
 def export(ffdecPath: str, swfPath: str, types: list[str], outDir: str):
     command = [
         ffdecPath,
+        "--enable-native-access=ALL-UNNAMED",
+        "-importAssets",
+        "yes,local",
         "-format",
         "sprite:svg",
         "-onerror",
@@ -22,11 +27,11 @@ def export(ffdecPath: str, swfPath: str, types: list[str], outDir: str):
     return (process.returncode, process.stdout, process.stderr)
 
 # adjusts outDir to have <swf name>/ appended
-def exportSpritesIfNeeded(ffdecPath: str, swfPath: str, outDir: str, force: bool = False):
+def exportSpritesIfNeeded(ffdecPath: str, swfPath: str, outDir: str = SWF_DUMP_DIR):
     needsExport = True
 
     outDir += "/" + pathlib.Path(swfPath).stem
-    if (not force):
+    if (not FORCE_REDUMP):
         try:
             dirs = os.listdir(outDir)
             for entry in dirs:
@@ -40,7 +45,7 @@ def exportSpritesIfNeeded(ffdecPath: str, swfPath: str, outDir: str, force: bool
     if (needsExport):
         code, _, stderr = export(ffdecPath, swfPath, ["sprite"], outDir)
         if (len(stderr) > 0):
-            print(f"FFDec error with code {code}: {stderr}")
+            logging.warning(f"FFDec error with code {code}: {stderr}")
 
     return outDir
 

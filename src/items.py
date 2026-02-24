@@ -1,6 +1,7 @@
 from .util import parse_csv as csv
 from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
+from .util import svg_tools as svg
 
 import os
 import shutil
@@ -87,8 +88,10 @@ def getItems() -> list[Item]:
 
     return items
 
-def exportItems(ffdecPath: str, items: list[Item], outfolder = "./out/items") -> str:
+def exportItems(svgCropper: svg.SvgCropper, ffdecPath: str, items: list[Item], outfolder = "./out") -> int:
     dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, ITEMS_SWF, ffdec.SWF_DUMP_DIR)
+
+    count = 0
 
     foldermap = {}
     dirs = os.listdir(dumpdir)
@@ -97,6 +100,10 @@ def exportItems(ffdecPath: str, items: list[Item], outfolder = "./out/items") ->
             if dir.endswith(id):
                 foldermap[kind] = os.path.join(dumpdir, dir)
                 break
+
+    outfolder += "/items"
+    if (os.path.isdir(outfolder)):
+        shutil.rmtree(outfolder)
 
     for item in items:
         if (item.variant != None):
@@ -115,18 +122,12 @@ def exportItems(ffdecPath: str, items: list[Item], outfolder = "./out/items") ->
         if os.path.exists(out):
             folder += "/dupes/" 
             os.makedirs(folder, exist_ok=True)
-            shutil.copyfile(out, folder + "/ITEM " + en + ".svg")
+            shutil.move(out, folder + "/ITEM " + en + ".svg")
 
-            i = 2
-            out = folder + "/ITEM " + en + ' ' + str(i) + ".svg"
-            while os.path.exists(out):
-                i += 1
-                out = folder + "/ITEM " + en + ' ' + str(i) + ".svg"
+            out = folder + "/ITEM " + en + ".svg"
             
         os.makedirs(folder, exist_ok=True)
-        shutil.copyfile(src, out)
-
-        with open(out, "r") as xml:
+        with open(src, "r") as xml:
             content = xml.readlines()
 
         outlines = []
@@ -136,11 +137,12 @@ def exportItems(ffdecPath: str, items: list[Item], outfolder = "./out/items") ->
 
             outlines.append(line)
 
-        with open(out, "w") as xmlout:
-            xmlout.write('\n'.join(outlines))        
+        with open(src, "w") as xmlout:
+            xmlout.write(''.join(outlines))   
 
-        
+        svgCropper.crop_handle_duplicate(src, out)  
+        count += 1
 
-    return dumpdir
+    return count
 
     

@@ -2,6 +2,11 @@ from .util import parse_swf as swf
 from .util import parse_csv as csv
 from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
+from .util import svg_tools as svg
+
+import os
+import shutil
+import logging
 
 FURNITURE_SWF = "./data/swfs/furniture.swf"
 FURNITURE_CSV = "./data/data/text/furniture.csv"
@@ -48,6 +53,40 @@ class Furniture:
                 curLabel = ""
                 curID = None
 
-def getFurniture(ffdecPath: str) -> tuple[Furniture, str]:
-    dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, FURNITURE_SWF, ffdec.SWF_DUMP_DIR)
-    return (Furniture(), dumpdir)
+def getFurniture() -> Furniture:
+    return Furniture()
+
+def exportFurniture(svgCropper: svg.SvgCropper, ffdecPath: str, furniture: Furniture, outfolder = "./out"):
+    furnDir = ffdec.exportSpritesIfNeeded(ffdecPath, FURNITURE_SWF)
+    dirs = os.listdir(furnDir)
+
+    count = 0
+
+    dirLUT = {}
+    for d in dirs:
+        dirLUT[d.split('_')[1]] = d
+
+    outfolder += "/furniture"
+    if (os.path.isdir(outfolder)):
+        shutil.rmtree(outfolder)
+
+    for name, id in furniture.lookup.items():
+        dir = dirLUT.get(str(id))
+
+        if dir != None:
+            fullPath = os.path.join(furnDir, dir)
+
+            outBase = outfolder + "/FURNITURE "
+            nlower = name.lower().replace('"', '')
+
+            svgCropper.crop(fullPath + "/1.svg", outBase + nlower + ".svg")
+            if (os.path.isfile(fullPath + "/2.svg")):
+                svgCropper.crop(fullPath + "/2.svg", outBase + nlower + " (Rare)" + ".svg")
+                count += 2
+            else:
+                logging.warning(f"furniture {name} has no rare variant!")
+                count += 1
+        else:
+            logging.warning(f"furniture {name} has no associated DefineSprite!")
+
+    return count
