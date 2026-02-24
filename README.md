@@ -5,7 +5,9 @@ This project aims to ease documentation of the Mewgenics game by parsing game fi
 
 ### Usage
 To use this utility place the unpacked `resources.gpak` file into `./data/` and run `python main.py` with your arguments. The `./data/` folder should contain the following folders `audio/`, `data/`, `levels/`, `shaders/`, `swfs/`, and `textures/`. Ensure the python working directory is the same as the directory `main.py` is located in, otherwise, nothing will work.
-
+  
+First run will take extra long (>10 Minutes) as .swf files need to be dumped.
+  
 ```
 python main.py [-h] [-v] [-o OUT_DIR] [--ffdec FFDEC] [--inkscape INKSCAPE] [--force-redump] [components ...]
 

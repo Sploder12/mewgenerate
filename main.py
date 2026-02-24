@@ -2,6 +2,7 @@ import src.status_effects as sf
 import src.mutations as mutations
 import src.items as items
 import src.furniture as furniture
+import src.custom_cats as custom_cats
 import src.util.ffdec_tools as ffdec
 
 import src.util.svg_tools as svg
@@ -35,10 +36,13 @@ def exportItems(svgCropper: svg.SvgCropper, ffdec: str):
 def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str):
     return furniture.exportFurniture(svgCropper, ffdec, furniture.getFurniture())
 
+def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str):
+    return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats())
 
 VALID_VALUES = {
     "items": exportItems,
-    "furniture": exportFurniture
+    "furniture": exportFurniture,
+    "cats": exportCustomCats
 }
 
 def main():
@@ -47,7 +51,8 @@ def main():
         description=
         "A utility for parsing Mewgenics assets.\n"
         "Unpacked .gpak files should be placed in ./data\n"
-        "Requires FFDec and Inkscape for full functionality"
+        "Requires FFDec and Inkscape for full functionality",
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -60,7 +65,7 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO if not args.verbose else logging.DEBUG)
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG if args.verbose else logging.INFO)
     if (args.force_redump):
         logging.debug("force-redump=True")
         ffdec.FORCE_REDUMP = True
