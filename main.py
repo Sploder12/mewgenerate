@@ -132,9 +132,9 @@ def main():
 # areaObjs = {}
 # objsArea = {}
 
+# from src.util import parse_lvl as lvl
 # import json
 # for root, dirs, files in os.walk("./data/levels"):
-#     break
 #     for file in files:
 
 #         # we can't parse these :(
@@ -149,13 +149,21 @@ def main():
 #         area = root.removeprefix("./data/levels\\").split('\\')[0]
 #         if (not area.endswith('.json') and '/' not in area):
 #             objs = levl.get_unique_objects()
-#             areaObjs.setdefault(area, dict()).update(objs)
+            
+#             areaObjs.setdefault(area, [])
+
 
 #             for obj in objs.items():
-#                 objsArea.setdefault(obj[0], {"data": obj[1]}).setdefault("areas", [])
+#                 if (obj[1] == None):
+#                     continue
 
-#                 if (area not in objsArea[obj[0]]["areas"]):
-#                     objsArea[obj[0]]["areas"].append(area)
+#                 name = obj[1].get("editor").get("name")
+#                 if (name not in areaObjs[area]):
+#                     areaObjs[area].append(name)
+
+#                 objsArea.setdefault(name, {}).setdefault("areas", [])
+#                 if (area not in objsArea[name]["areas"]):
+#                     objsArea[name]["areas"].append(area)
 
 
 #         tiles = []
@@ -172,14 +180,14 @@ def main():
 #         os.makedirs('\\'.join(outpath.split('\\')[:-1]), exist_ok=True)
 #         data = {"spawns": spawns, "tiles": tiles}
 #         with open(outpath, "w") as jfile:
-#             jfile.write(json.dumps(data, indent=4))
+#             jfile.write(json.dumps(data, indent=4, sort_keys=True))
 
-# exit(0)
+# os.makedirs("./out/levels/computed", exist_ok=True)
 # with open("./out/levels/computed/areaObjs.json", "w") as jfile:
-#     jfile.write(json.dumps(areaObjs, indent=4))
+#     jfile.write(json.dumps(areaObjs, indent=4, sort_keys=True))
 
 # with open("./out/levels/computed/objsArea.json", "w") as jfile:
-#     jfile.write(json.dumps(objsArea, indent=4))
+#     jfile.write(json.dumps(objsArea, indent=4, sort_keys=True))
 
 
 
