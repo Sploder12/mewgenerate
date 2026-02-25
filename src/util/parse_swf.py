@@ -297,3 +297,42 @@ def parse_swf(filename: str) -> SWF:
         content = file.read()
 
     return SWF(content)
+
+def getAllSprites(tags: SWF) -> dict[int, DefineSprite]:
+    allSprites = {}
+
+    for tag in tags.tags:
+        if (tag.type == SWF.DEFINE_SPRITE):
+            dsprite = DefineSprite(tag)
+            allSprites[dsprite.id] = dsprite
+
+    return allSprites
+
+def getSymbolTable(tags: SWF) -> dict[str, int]:
+    symbolTable = {}
+    for tag in tags.tags:
+        if (tag.type == SWF.SYMBOL_CLASS):
+            sclass = SymbolClass(tag)
+            for symbol in sclass.symbols:
+                symbolTable[symbol[1]] = symbol[0]
+
+    return symbolTable
+
+# useful for abilities and passives
+# but not furniture, furniture uses a 2nd indirection
+def extractSpriteNames(sprite: DefineSprite) -> dict[str, int]:
+    lookup: dict[str, int] = {}
+
+    curLabel = ""
+    curID = 1
+    for frame in sprite.tags:
+        if (frame.type == SWF.FRAME_LABEL):
+            curLabel = FrameLabel(frame).label
+        elif (frame.type == SWF.SHOW_FRAME):
+            if (curLabel != ""):
+                lookup[curLabel] = curID
+                curLabel = ""
+    
+            curID += 1
+
+    return lookup

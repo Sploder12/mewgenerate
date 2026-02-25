@@ -1,5 +1,6 @@
 import os
 import subprocess
+import logging
 
 from typing import Callable
 
@@ -42,6 +43,10 @@ class SvgCropper:
         
         if (src != dst and os.path.isfile(dst)):
             raise FileExistsError(f"{dst} already exists")
+
+        if (os.path.getsize(src) <= 1):
+            logging.warning(f"{src} is an empty file")
+            return
 
         data = f"file-open:{src}\nexport-margin:5\nexport-area-drawing\nexport-filename:{dst}\nexport-do\nfile-close\n"
 

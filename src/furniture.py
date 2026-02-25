@@ -22,20 +22,9 @@ class Furniture:
 
     def __init__(self):
         self.lookup = {}
-        self.allSprites = {}
-
-        symbolTable = {}
-        for tag in FURNITURE_SWF_TAGS.tags:
-            if (tag.type == swf.SWF.SYMBOL_CLASS):
-                sclass = swf.SymbolClass(tag)
-                for symbol in sclass.symbols:
-                    symbolTable[symbol[1]] = symbol[0]
-
-        for tag in FURNITURE_SWF_TAGS.tags:
-            if (tag.type == swf.SWF.DEFINE_SPRITE):
-                dsprite = swf.DefineSprite(tag)
-                self.allSprites[dsprite.id] = dsprite
-
+        self.allSprites = swf.getAllSprites(FURNITURE_SWF_TAGS)
+        symbolTable = swf.getSymbolTable(FURNITURE_SWF_TAGS)
+      
         furnitureLUT = self.allSprites.get(symbolTable.get("Furniture"))
 
         curLabel = ""

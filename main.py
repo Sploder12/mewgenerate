@@ -1,5 +1,5 @@
 import src.status_effects as sf
-import src.mutations as mutations
+import src.abilities as abilities
 import src.items as items
 import src.furniture as furniture
 import src.custom_cats as custom_cats
@@ -39,10 +39,18 @@ def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
 def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
     return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats(), outdir)
 
+def exportActives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return abilities.exportActives(svgCropper, ffdec, abilities.getActives(), outdir)
+
+def exportPassives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return abilities.exportPassives(svgCropper, ffdec, abilities.getPassives(), outdir)
+
 VALID_VALUES = {
     "items": exportItems,
     "furniture": exportFurniture,
-    "cats": exportCustomCats
+    "cats": exportCustomCats,
+    "actives": exportActives,
+    "passives": exportPassives
 }
 
 def main():
@@ -118,25 +126,7 @@ def main():
 
 
 
-#ICONS_SWF = "./data/swfs/ability_icons.swf"
 
-#dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, ICONS_SWF, ffdec.SWF_DUMP_DIR)
-
-# dirs = os.listdir(dumpdir)
-# for dir in dirs:
-#     break
-#     fullPath = os.path.join(dumpdir, dir)
-#     if (os.path.isdir(fullPath)) and dir.startswith("DefineSprite"):
-#         name = '_'.join(dir.split('_')[2:])
-#         if (name == ""):
-#             name = dir.split('_')[1]
-
-#         files = dirs = os.listdir(fullPath)
-#         for file in files:
-#             p = os.path.join(fullPath, file)
-#             fname = name + "_" + file
-
-#             shutil.copyfile(p, f"./out/abilities/{fname}")
 
 
 # areaObjs = {}
