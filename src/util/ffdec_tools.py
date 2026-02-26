@@ -16,7 +16,7 @@ def export(ffdecPath: str, swfPath: str, types: list[str], outDir: str):
         "-importAssets",
         "yes,local",
         "-format",
-        "sprite:svg",
+        "sprite:svg,shape:svg",
         "-onerror",
         "ignore",
         "-export",
