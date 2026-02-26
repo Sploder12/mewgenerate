@@ -163,15 +163,21 @@ class SvgData:
                 
                 self.header = self.header[:s] + " transform=\"" + transform + "\" " + self.header[s:]
 
-        def replaceComposite(self, id: str, replacement: Self):
+        def replaceComposite(self, id: str, replacement: Self | None):
             count = 0
-            for i in range(len(self.subcomponents)):
+            i = 0
+            while i < len(self.subcomponents):
                 sub = self.subcomponents[i]
                 if sub.getID() == id:
-                    self.subcomponents[i] = replacement
+                    if (replacement == None):
+                        del self.subcomponents[i]
+                        i -= 1
+                    else:
+                        self.subcomponents[i] = replacement
                     count += 1
 
                 count += sub.replaceComposite(id, replacement)
+                i += 1
 
             return count
         
@@ -185,6 +191,20 @@ class SvgData:
                     return r
                 
             return None
+        
+        def prefixIds(self, prefix: str):
+            if (self.getID() != ""):
+                self.setID(prefix + self.getID())
+
+            for sub in self.subcomponents:
+                sub.prefixIds(prefix)
+        
+        def prefixLinks(self, prefix: str):
+            if self.getTagname() == "use":
+                self.setHrefID(prefix + self.getHrefID())
+
+            for sub in self.subcomponents:
+                sub.prefixLinks(prefix)
             
         def compile(self) -> str:
             out = self.header
@@ -212,9 +232,11 @@ class SvgData:
         out += "</svg>\n"
         return out
     
-    def replaceComposite(self, id: str, replacement: Composite):
-        self.decl.replaceComposite(id, replacement)
-        self.defs.replaceComposite(id, replacement)
+    def replaceComposite(self, id: str, replacement: Composite | None):
+        return self.decl.replaceComposite(id, replacement) + self.defs.replaceComposite(id, replacement)
+
+    def removeComposite(self, id: str):
+        return self.replaceComposite(id, None)
 
     def findComposite(self, id: str) -> Composite | None:
         r = self.decl.findComposite(id)
@@ -222,6 +244,12 @@ class SvgData:
             return r
         
         return self.defs.findComposite(id)
+    
+    def prefixLinks(self, prefix: str):
+        self.decl.prefixLinks(prefix)
+
+        self.defs.prefixIds(prefix)
+        self.defs.prefixLinks(prefix)
     
     @staticmethod 
     def parseComposite(lines: list[str]) -> Composite:
@@ -275,8 +303,11 @@ class SvgData:
         ts = SvgData.parseComposite(lines[1:end])
 
         if (len(ts.subcomponents) != 2):
-            raise RuntimeError("unexpected SVG format")
-        
+            if (len(ts.subcomponents) == 1):
+                return SvgData(lines[0], lines[1], ts.subcomponents[0], SvgData.Composite("<defs></defs>", []))
+            else:
+                return SvgData(lines[0], lines[1], SvgData.Composite("<g></g>", []), SvgData.Composite("<defs></defs>", []))
+
         return SvgData(lines[0], lines[1], ts.subcomponents[0], ts.subcomponents[1])
 
 def parse_svg(filename: str) -> SvgData:
@@ -290,18 +321,13 @@ if __name__ == "__main__":
     cropper = SvgCropper("C:/Program Files/Inkscape/bin/inkscape.com")
     for i in range(1, 11):
         test = parse_svg("./cache/swfdump/catparts/DefineSprite_601/1.svg")
+        test2 = parse_svg(f"./cache/swfdump/catparts/DefineSprite_599/{i}.svg")
+        test2.prefixLinks("bg_")
+
+        test.defs.subcomponents += test2.defs.subcomponents
 
         bgtag = test.findComposite("bg")
         transform = bgtag.getTransform()
-
-        test2 = parse_svg(f"./cache/swfdump/catparts/DefineSprite_599/{i}.svg")
-        for sub in test2.decl.subcomponents:
-            if (sub.getTagname() == "use"):
-                sub.setHrefID("bg_" + sub.getHrefID())
-
-        for sub in test2.defs.subcomponents:
-            sub.setID("bg_" + sub.getID())
-            test.defs.subcomponents.append(sub)
 
         test2.decl.setTransform(transform)
         test.replaceComposite("bg", test2.decl)

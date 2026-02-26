@@ -5,6 +5,8 @@ from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
 from .util import svg_tools as svg
 
+from . import palette
+
 import os
 import shutil
 import logging
@@ -92,34 +94,6 @@ class CustomCat:
         self.rightear = CustomCat.Part(self.texture, self.default_frame, gondata.setdefault("rightear", None))
         self.mouth = CustomCat.Part(self.texture, self.default_frame, gondata.setdefault("mouth", None))
 
-class Palette:
-    colors: list[tuple[int, int, int]]
-
-    def __init__(self, colors: list[tuple[int, int, int]]):
-        self.colors = colors
-
-    def get(self, red: int, green: int, blue: int) -> tuple[int, int, int]:
-        if (abs(red - green) >= 1 or abs(red - blue) >= 1):
-            return (red, green, blue)
-    
-        return self.colors[int(red / 16)]
-
-def loadPalettes(src: str) -> list[Palette]:
-    with Image.open(src) as img:
-        converted = img.convert("RGB")
-        pixels = converted.load()
-        height = converted.height
-
-    palettes: list[Palette] = []
-    for y in range(height):
-        cur: list[tuple[int, int, int]] = []
-        for x in range(16):
-            cur.append(pixels[x, y])
-
-        palettes.append(Palette(cur))
-
-    return palettes
-
 def getCustomCats() -> list[CustomCat]:
     data = gon.parse_gon(CUSTOM_CAT_GON)
 
@@ -146,55 +120,9 @@ def declaw(src: str, dest: str):
     with open(dest, "w") as outdata:
         outdata.write(''.join(out))
     
-
-def deage(src: str, dest: str):
-    with open(src, "r") as data:
-        content = data.readlines()
-
-    out = []
-    for line in content:
-        if ("id=\"greyhair\"" in line or "id=\"wrinkles\"" in line):
-            continue
-    
-        out.append(line)
-
-    with open(dest, "w") as outdata:
-        outdata.write(''.join(out))
-
-def applyPalette(src: str, dest: str, palette: Palette):
-    with open(src, "r") as data:
-        content = data.readlines()
-
-    out = []
-    for line in content:
-        if "fill=\"#" in line:
-            f = line.find("fill=\"#") + 7
-            fe = line.find('"', f)
-
-            red = int(line[f:f + 2], 16)
-            green = int(line[f + 2:f + 4], 16)
-            blue = int(line[f + 4:f + 6], 16)
-
-            color = palette.get(red, green, blue)
-
-            line = line[:f] + f"{color[0]:x}{color[1]:x}{color[2]:x}" + line[fe:]
-
-        elif "stop-color=\"#" in line:
-            f = line.find("stop-color=\"#") + 13
-            fe = line.find('"', f)
-
-            red = int(line[f:f + 2], 16)
-            green = int(line[f + 2:f + 4], 16)
-            blue = int(line[f + 4:f + 6], 16)
-
-            color = palette.get(red, green, blue)
-
-            line = line[:f] + f"{color[0]:x}{color[1]:x}{color[2]:x}" + line[fe:]
-
-        out.append(line)
-
-    with open(dest, "w") as outdata:
-        outdata.write(''.join(out))
+def deage(data: svg.SvgData):
+    data.removeComposite("wrinkles")
+    data.removeComposite("greyhair")
 
 def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[CustomCat], outdir: str):
     partDir = ffdec.exportSpritesIfNeeded(ffdecPath, CATPARTS_SWF)
@@ -218,13 +146,15 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
     bodyDir = partFolderLUT.get("CatBody")
     headDir = partFolderLUT.get("CatHead")
 
+    headPlacementDir = partFolderLUT.get("CatHeadPlacements")
+
     earDir = partFolderLUT.get("CatEar")
     rightEyeDir = partFolderLUT.get("CatEye_Right")
     eyeDir = partFolderLUT.get("CatEye")
     eyebrowDir = partFolderLUT.get("CatEyebrow")
     mouthDir = partFolderLUT.get("CatMouth")
 
-    palettes = loadPalettes("./data/textures/palette.png")
+    palettes = palette.loadPalettes("./data/textures/palette.png")
 
     count = 0
     for cat in cats:
@@ -232,55 +162,105 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
 
         os.makedirs(folder)
 
-        applyPalette(textureDir + '/' + str(cat.texture) + ".svg", folder + "/texture.svg", palettes[cat.palette])
+        def setComponent(uid: str, id: str, src: svg.SvgData, dest: svg.SvgData, reverseOrder = False):
+            tag = dest.findComposite(id)
+            if tag == None:
+                return False
+            
+            transform = tag.getTransform().split(',')
+
+            src.prefixLinks(uid)
+
+            if reverseOrder:
+                dest.defs.subcomponents = src.defs.subcomponents + dest.defs.subcomponents
+            else:
+                dest.defs.subcomponents += src.defs.subcomponents
+
+            # @TODO figure out transforms (try rebase on 0?)
+            #src.decl.setTransform(f"matrix({"-1.0" if '-' in transform[0] else "1.0"}, 0.0, 0.0, {"-1.0" if '-' in transform[3] else "1.0"}, {transform[4]}, {transform[5]}")
+            dest.replaceComposite(id, src.decl)
+
+            return True
+
+        def setTex(uid: str, svgdata: svg.SvgData, texture: int):
+            tex = svg.parse_svg(textureDir + '/' + str(texture) + ".svg")
+            return setComponent(uid, "tex", tex, svgdata)
+
+        out = svg.parse_svg(headPlacementDir + '/' + str(cat.head.frame) + ".svg")
+        keep = []
+        for sub in out.decl.subcomponents:
+            if sub.getTagname() == "use" and sub.getID() == "":
+                keep.append(out.defs.findComposite(sub.getHrefID()))
+
+        out.defs.subcomponents.clear()
+        for k in keep:
+            if k != None:
+                out.defs.subcomponents.append(k)
+
+        setTex("head_", out, cat.head.texture)
 
         declaw(legDir + '/' + str(cat.leg1.frame) + ".svg", folder + "/leg1.svg")
         declaw(legDir + '/' + str(cat.leg2.frame) + ".svg", folder + "/leg2.svg")
         declaw(legDir + '/' + str(cat.arm1.frame) + ".svg", folder + "/arm1.svg")
         declaw(legDir + '/' + str(cat.arm2.frame) + ".svg", folder + "/arm2.svg")
 
-        deage(headDir + '/' + str(cat.head.frame) + ".svg", folder + "/head.svg")
+        #deage(headDir + '/' + str(cat.head.frame) + ".svg", folder + "/head.svg")
         
-        svgCropper.crop(folder + "/texture.svg", folder + "/texture.svg")
+        # svgCropper.crop(bodyDir + '/' + str(cat.body.frame) + ".svg", folder + "/body.svg")
+        # if (cat.body.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.body.texture) + ".svg", folder + "/body_texture.svg")
 
-        svgCropper.crop(bodyDir + '/' + str(cat.body.frame) + ".svg", folder + "/body.svg")
-        if (cat.body.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.body.texture) + ".svg", folder + "/body_texture.svg")
+        # svgCropper.crop(tailDir + '/' + str(cat.tail.frame) + ".svg", folder + "/tail.svg")
+        # if (cat.tail.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.tail.texture) + ".svg", folder + "/tail_texture.svg")
 
-        svgCropper.crop(tailDir + '/' + str(cat.tail.frame) + ".svg", folder + "/tail.svg")
-        if (cat.tail.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.tail.texture) + ".svg", folder + "/tail_texture.svg")
+        # svgCropper.crop(folder + "/leg1.svg", folder + "/leg1.svg")
+        # if (cat.leg1.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.leg1.texture) + ".svg", folder + "/leg1_texture.svg")
 
-        svgCropper.crop(folder + "/leg1.svg", folder + "/leg1.svg")
-        if (cat.leg1.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.leg1.texture) + ".svg", folder + "/leg1_texture.svg")
+        # svgCropper.crop(folder + "/leg2.svg", folder + "/leg2.svg")
+        # if (cat.leg2.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.leg2.texture) + ".svg", folder + "/leg2_texture.svg")
 
-        svgCropper.crop(folder + "/leg2.svg", folder + "/leg2.svg")
-        if (cat.leg2.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.leg2.texture) + ".svg", folder + "/leg2_texture.svg")
+        # svgCropper.crop(folder + "/arm1.svg", folder + "/arm1.svg")
+        # if (cat.arm1.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.arm1.texture) + ".svg", folder + "/arm1_texture.svg")
 
-        svgCropper.crop(folder + "/arm1.svg", folder + "/arm1.svg")
-        if (cat.arm1.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.arm1.texture) + ".svg", folder + "/arm1_texture.svg")
-
-        svgCropper.crop(folder + "/arm2.svg", folder + "/arm2.svg")
-        if (cat.arm2.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.arm2.texture) + ".svg", folder + "/arm2_texture.svg")
+        # svgCropper.crop(folder + "/arm2.svg", folder + "/arm2.svg")
+        # if (cat.arm2.texture != cat.texture):
+        #     svgCropper.crop(textureDir + '/' + str(cat.arm2.texture) + ".svg", folder + "/arm2_texture.svg")
 
         # claws???
 
-        svgCropper.crop(folder + "/head.svg", folder + "/head.svg")
-        if (cat.head.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.head.texture) + ".svg", folder + "/head_texture.svg")
+        #svgCropper.crop(folder + "/head.svg", folder + "/head.svg")
+        #if (cat.head.texture != cat.texture):
+        #    svgCropper.crop(textureDir + '/' + str(cat.head.texture) + ".svg", folder + "/head_texture.svg")
 
-        svgCropper.crop(eyeDir + '/' + str(cat.lefteye.frame) + ".svg", folder + "/lefteye.svg")
-        if (cat.lefteye.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.lefteye.texture) + ".svg", folder + "/lefteye_texture.svg")
+        mouth = svg.parse_svg(mouthDir + '/' + str(cat.mouth.frame) + ".svg")
+        setTex("mouth_", mouth, cat.mouth.texture)
+        setComponent("mouth_", "mouth", mouth, out)
 
-        svgCropper.crop(rightEyeDir + '/' + str(cat.righteye.frame) + ".svg", folder + "/righteye.svg")
-        if (cat.righteye.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.righteye.texture) + ".svg", folder + "/righteye_texture.svg")
+        leye = svg.parse_svg(eyeDir + '/' + str(cat.lefteye.frame) + ".svg")
+        setTex("leye_", leye, cat.lefteye.texture)
+        setComponent("leye_", "leye", leye, out)
 
+        reye = svg.parse_svg(rightEyeDir + '/' + str(cat.righteye.frame) + ".svg")
+        setTex("reye_", reye, cat.righteye.texture)
+        setComponent("reye_", "reye", reye, out)
+
+        lear = svg.parse_svg(earDir + '/' + str(cat.leftear.frame) + ".svg")
+        setTex("lear_", lear, cat.leftear.texture)
+
+        palette.applyPalette(palettes[cat.palette], lear)
+        with open(f"{folder}/test_lear.svg", "w") as of:
+            of.write(lear.compile())
+
+        setComponent("lear_", "lear", lear, out, True)
+
+        rear = svg.parse_svg(earDir + '/' + str(cat.rightear.frame) + ".svg")
+        setTex("rear_", rear, cat.rightear.texture)
+        setComponent("rear_", "rear", rear, out, True)
+ 
         svgCropper.crop(eyebrowDir + '/' + str(cat.lefteyebrow.frame) + ".svg", folder + "/lefteyebrow.svg")
         if (cat.lefteyebrow.texture != cat.texture):
             svgCropper.crop(textureDir + '/' + str(cat.lefteyebrow.texture) + ".svg", folder + "/lefteyebrow_texture.svg")
@@ -288,19 +268,12 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
         svgCropper.crop(eyebrowDir + '/' + str(cat.righteyebrow.frame) + ".svg", folder + "/righteyebrow.svg")
         if (cat.righteyebrow.texture != cat.texture):
             svgCropper.crop(textureDir + '/' + str(cat.righteyebrow.texture) + ".svg", folder + "/righteyebrow_texture.svg")
+        
+        palette.applyPalette(palettes[cat.palette], out)
+        with open(f"{folder}/{cat.id}.svg", "w") as of:
+            of.write(out.compile())
 
-        svgCropper.crop(earDir + '/' + str(cat.leftear.frame) + ".svg", folder + "/leftear.svg")
-        if (cat.leftear.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.leftear.texture) + ".svg", folder + "/leftear_texture.svg")
-
-        svgCropper.crop(earDir + '/' + str(cat.rightear.frame) + ".svg", folder + "/rightear.svg")
-        if (cat.rightear.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.rightear.texture) + ".svg", folder + "/rightear_texture.svg")
-
-        svgCropper.crop(mouthDir + '/' + str(cat.mouth.frame) + ".svg", folder + "/mouth.svg")
-        if (cat.mouth.texture != cat.texture):
-            svgCropper.crop(textureDir + '/' + str(cat.mouth.texture) + ".svg", folder + "/mouth_texture.svg")
-
+        #svgCropper.crop(f"{folder}/{cat.id}.svg", f"{folder}/{cat.id}.svg")
         count += 1
 
     return count
