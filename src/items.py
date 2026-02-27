@@ -8,6 +8,8 @@ import shutil
 
 from typing import Any
 
+from . import translations
+
 ITEMS_SWF = "./data/swfs/catparts.swf"
 
 ITEMS_FOLDER = "./data/data/items"
@@ -34,10 +36,6 @@ KIND_MAP = {
     "trinket": "TrinketIcon",
     "weapon": "WeaponIcon",
 }
-
-ITEMS_CSV = "./data/data/text/items.csv"
-ITEMS_TRANSLATIONS = csv.parse_csv(ITEMS_CSV)
-ITEMS_TRANSLATIONS2 = csv.parse_csv("./data/data/text/additions.csv")
 
 class Item:
     variant: str | None
@@ -113,10 +111,7 @@ def exportItems(svgCropper: svg.SvgCropper, ffdecPath: str, items: list[Item], o
 
         folder = outfolder + "/" + item.kind
 
-        try:
-            en = ITEMS_TRANSLATIONS.get(item.translationID).get()
-        except:
-            en = ITEMS_TRANSLATIONS2.get(item.translationID).get()
+        en = translations.get(item.translationID)
 
         out = folder + "/ITEM " + en + ".svg"
         if os.path.exists(out):

@@ -1,8 +1,9 @@
 # this file is for parsing all the buffs and debuffs in the game
 # this includes ones that aren't for cats as well (brittle, fragile, cursed, etc.)
 
-from .util import parse_csv as csv
 from .util import parse_gon as gon
+from . import translations
+
 
 class Tooltip:
     name: str
@@ -12,9 +13,9 @@ class Tooltip:
         self.name = name
         self.desc = desc
 
-    def translate(self, translations: csv.csv_data, language: str = "en"):
-        tname = translations.get(self.name).get(language)
-        tdesc = translations.get(self.desc).get(language)
+    def translate(self, language: str = "en"):
+        tname = translations.get(self.name, language)
+        tdesc = translations.get(self.desc, language)
         return Tooltip(tname, tdesc)
 
 class Keyword:
@@ -71,11 +72,9 @@ class Keyword:
 
 class Keywords:
     keywords: dict[str, Keyword]
-    translations: csv.csv_data
-
-    def __init__(self, translations: csv.csv_data):
+ 
+    def __init__(self):
         self.keywords = {}
-        self.translations = translations
 
     def get(self, id: str, resolveAliases = True):
         keyword = self.keywords.get(id)
@@ -86,8 +85,8 @@ class Keywords:
         return keyword
 
 
-def collect_keywords(tooltipsfile: str = "./data/data/keyword_tooltips.gon", translationsfile: str = "./data/data/text/keyword_tooltips.csv") -> Keywords:
-    out = Keywords(csv.parse_csv(translationsfile))
+def collect_keywords(tooltipsfile: str = "./data/data/keyword_tooltips.gon") -> Keywords:
+    out = Keywords()
 
     keywords = gon.parse_gon(tooltipsfile)
     if not isinstance(keywords, dict):

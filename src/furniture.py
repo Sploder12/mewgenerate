@@ -1,5 +1,4 @@
 from .util import parse_swf as swf
-from .util import parse_csv as csv
 from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
 from .util import svg_tools as svg
@@ -9,11 +8,9 @@ import shutil
 import logging
 
 FURNITURE_SWF = "./data/swfs/furniture.swf"
-FURNITURE_CSV = "./data/data/text/furniture.csv"
 FURNITURE_GON = "./data/data/furniture_effects.gon"
 
-FURNITURE_STRINGS = csv.parse_csv(FURNITURE_CSV)
-FURNITURE_DATA = gon.parse_gon(FURNITURE_GON)
+#FURNITURE_DATA = gon.parse_gon(FURNITURE_GON)
 FURNITURE_SWF_TAGS = swf.parse_swf(FURNITURE_SWF)
 
 class Furniture:

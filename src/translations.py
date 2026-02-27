@@ -1,4 +1,5 @@
 from .util import parse_csv as csv
+from .util import resource_sync as sync
 
 import os
 
@@ -20,4 +21,16 @@ class Translations:
             
         raise RuntimeError(f"{id} has no translations")
 
-TRANSLATIONS = Translations("./data/data/text")
+# not intended for normal use (no caching)
+def produceTranslations(textDir: str):
+    return Translations(textDir)
+
+TRANSLATIONS = sync.ValueSync[Translations](produceTranslations)
+TRANSLATION_DIR = "./data/data/text"
+
+# translations are lazy loaded, this provides some relief for those with partial files
+def getTranslations(translationDir: str = TRANSLATION_DIR) -> Translations:
+    return TRANSLATIONS.get(translationDir)
+
+def get(id: str, lang: str = "en") -> str:
+    return getTranslations().get(id, lang)

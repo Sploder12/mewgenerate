@@ -5,6 +5,7 @@ import src.furniture as furniture
 import src.custom_cats as custom_cats
 import src.util.ffdec_tools as ffdec
 import src.status as status
+import src.events as events
 
 import src.util.svg_tools as svg
 
@@ -49,12 +50,16 @@ def exportPassives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
 def exportStatus(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
     return status.exportStatuses(svgCropper, ffdec, [], outdir)
 
+def exportEvents(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return events.exportEvents(events.getEvents(), outdir)
+
 VALID_VALUES = {
     "items": exportItems,
     "furniture": exportFurniture,
     "cats": exportCustomCats,
     "actives": exportActives,
     "passives": exportPassives,
+    "events": exportEvents,
    # "statuses": exportStatus, # there are many issues with this one 
 }
 

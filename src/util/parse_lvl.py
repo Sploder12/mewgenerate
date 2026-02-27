@@ -2,11 +2,15 @@
 # maps are 10x10
 # bottom is (0, 0), top is (9, 9)
 # right is (9, 0), left is (0, 9)
+
+import logging
 import struct
+import threading
 from typing import Any
 
 # needed for finding ids
 from . import parse_gon as gon
+from . import resource_sync as sync
 
 class Level:
     class Entry:
@@ -136,26 +140,28 @@ class ResolvedLevel:
         return out
 
 
-def parse_lvl(filename: str) -> Level:
-    with open(filename, "rb") as file:
+def lvlOnWait(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} waiting on parse of {filepath}")
+
+def lvlOnWaitEnd(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} done waiting on {filepath}")
+
+
+def lvlProduce(filepath: str):
+    with open(filepath, "rb") as file:
         content = file.read()
 
     return Level(content)
 
-spawnData = gon.parse_gon("./data/data/spawns.gon")
-tileData = gon.parse_gon("./data/data/tiles.gon")
+lvlMap = sync.MapSync[Level](lvlProduce, lvlOnWait, lvlOnWaitEnd)
+
+def parse_lvl(filename: str) -> Level:
+    return lvlMap.get(filename, filename)
 
 def parsed_lvl_resolved(filename: str, datadir: str = "./data/data") -> ResolvedLevel:
     lvl = parse_lvl(filename)
 
-    if (lvl.spawnGon != "spawns.gon"):
-        spawnGon = gon.parse_gon(datadir + "/" + lvl.spawnGon)
-    else:
-        spawnGon = spawnData
-
-    if (lvl.tileGon != "tiles.gon"):
-        tileGon = gon.parse_gon(datadir + "/" + lvl.tileGon)
-    else:
-        tileGon = tileData
+    spawnGon = gon.parse_gon(datadir + "/" + lvl.spawnGon)
+    tileGon = gon.parse_gon(datadir + "/" + lvl.tileGon)
 
     return ResolvedLevel(spawnGon, tileGon, lvl)

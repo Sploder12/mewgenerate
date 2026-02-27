@@ -42,12 +42,12 @@ class Passive:
         self.data = gondata
 
     def resolve(self, lang = "en"):
-        self.name = translations.TRANSLATIONS.get(self.name, lang)
+        self.name = translations.get(self.name, lang)
 
         # who cares (handling variants is for another day)
-        # self.desc = translations.TRANSLATIONS.get(self.desc, lang)
+        # self.desc = translations.get(self.desc, lang)
         if (self.multiclass != ""):
-            self.multiclass = translations.TRANSLATIONS.get(self.multiclass, lang)
+            self.multiclass = translations.get(self.multiclass, lang)
 
 
 class Active:
@@ -72,10 +72,10 @@ class Active:
         self.data = gondata
 
     def resolve(self, lang = "en"):
-        self.name = translations.TRANSLATIONS.get(self.name, lang)
+        self.name = translations.get(self.name, lang)
 
         # who cares (handling variants is for another day)
-        #self.desc = translations.TRANSLATIONS.get(self.desc, lang)
+        #self.desc = translations.get(self.desc, lang)
 
         if '/' in self.name:
             logging.warning(f"Active {self.name} being truncated")

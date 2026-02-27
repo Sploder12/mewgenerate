@@ -29,6 +29,8 @@
 #SOFTWARE.
 ################################################################################
 
+from typing import Any
+
 class GON:
     @staticmethod
     def is_whitespace(char: str) -> bool:
@@ -141,7 +143,10 @@ class GON:
 
 
         if (curToken != ""):
-            tokens.append(curToken)
+            if (inComment): # this is legal, strings and others aren't
+                tokens.append("//" + curToken)
+            else:
+                tokens.append(curToken)
 
         return tokens
     
@@ -189,7 +194,7 @@ class GON:
         if (stream.peek() == "{" or forceObj):
             forced = stream.peek() != "{"
 
-            ret = {}
+            ret: dict[str, Any] = {}
 
             if (not forced):
                 stream.consume()
@@ -221,17 +226,17 @@ class GON:
             return ret
         
         elif(stream.peek() == "["):
-            # using obj so comments can be preserved
-            ret = {}
+            # using dict so comments can be preserved
+            aret: dict[int | str, Any] = {}
             index = 0
 
             stream.consume()
             while (stream.peek() != "]"):
                 if (stream.peek().startswith("//")):
-                    ret.setdefault("__COMMENTS__", []).append(stream.read().removeprefix("//"))
+                    aret.setdefault("__COMMENTS__", []).append(stream.read().removeprefix("//"))
                     continue
 
-                ret[index] = GON.loadFromTokenStream(stream, False)
+                aret[index] = GON.loadFromTokenStream(stream, False)
                 index += 1
 
                 if (stream.error):
@@ -239,40 +244,60 @@ class GON:
                     return None
                 
             stream.consume()
-            return ret
+            return aret
         else:
             while (stream.peek().startswith("//")):
                 stream.consume()
                     
-            ret = stream.read()
+            sret: str = stream.read()
             if (stream.error):
                 return None
 
             try:
-                return int(ret)
+                return int(sret)
             except ValueError:
                 pass
 
             try:
-                return float(ret)
+                return float(sret)
             except ValueError:
                 pass
 
-            if (ret == "true"):
+            if (sret == "true"):
                 return True
-            elif (ret == "false"):
+            elif (sret == "false"):
                 return False
             
-            return ret
+            return sret
     
     @staticmethod
     def loadFromTokens(tokens: list[str]):
         stream = GON.TokenStream(tokens)
         return GON.loadFromTokenStream(stream, True)
 
-def parse_gon(filepath: str):
+
+import logging
+import threading
+
+from . import resource_sync as sync
+
+def gonOnWait(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} waiting on parse of {filepath}")
+
+def gonOnWaitEnd(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} done waiting on {filepath}")
+
+def gonProduce(filepath: str):
+    #logging.debug(f"thread {threading.get_ident()} parsing {filepath}")
+   
     with open(filepath, encoding="utf-8-sig") as file:
         content = file.read()
 
     tokens = GON.tokenize(content)
     return GON.loadFromTokens(tokens)
+
+gonMap = sync.MapSync[Any](gonProduce, gonOnWait, gonOnWaitEnd)
+
+# gons are cached, cause these things get REUSED
+def parse_gon(filepath: str):
+    return gonMap.get(filepath, filepath)
