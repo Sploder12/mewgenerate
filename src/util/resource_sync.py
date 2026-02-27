@@ -27,6 +27,9 @@ class ResourceSync(Generic[T]):
             return out
     
     def consume(self, *args, **kwargs):
+        if (self.done):
+            return
+
         waited = False
         with self.cv:
             if (not self.done):
@@ -65,6 +68,13 @@ class MapSync(Generic[T]):
         self.data = {}
 
     def get(self, id: str, *args, **kwargs) -> T:
+        # attempt fast-path [@TODO verify thread-safety, I think it's okay?]
+        if (id in self.data):
+            entry = self.data[id]
+            entry.sync.consume(*args, **kwargs)
+            return entry.value
+
+        # sad-path
         producing = False
         with self.mapLock:
             if (id in self.data):

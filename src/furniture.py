@@ -69,7 +69,7 @@ def exportFurniture(svgCropper: svg.SvgCropper, ffdecPath: str, furniture: Furni
             if (os.path.isfile(fullPath + "/2.svg")):
                 svgCropper.crop(fullPath + "/2.svg", outBase + nlower + " (Rare)" + ".svg")
                 count += 2
-            else:
+            elif (name != "autofeeder" and "special" not in name):
                 logging.warning(f"furniture {name} has no rare variant!")
                 count += 1
         else:

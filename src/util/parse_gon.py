@@ -34,11 +34,11 @@ from typing import Any
 class GON:
     @staticmethod
     def is_whitespace(char: str) -> bool:
-        return char ==' ' or char == '\n' or char == '\r' or char == '\t'
+        return char in {' ', '\n', '\r', '\t'}
     
     @staticmethod
     def is_symbol(char: str) -> bool:
-        return char == '=' or char == ',' or char == '{' or char == '}' or char == '[' or char == ']'
+        return char in {'=', ',', '{', '}', '[', ']'}
     
     @staticmethod
     def is_ignored_symbol(char: str) -> bool:

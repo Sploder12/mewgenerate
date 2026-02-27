@@ -52,7 +52,7 @@ class SvgCropper:
         data = f"file-open:{src}\nexport-margin:5\nexport-area-drawing\nexport-filename:{dst}\nexport-do\nfile-close\n"
 
         self.process.stdin.write(data.encode())
-        self.process.stdin.flush()
+        #self.process.stdin.flush()
 
     def crop_handle_duplicate(self, src: str, dst: str, onDuplicate: Callable[[str], str] = defaultDuplicateHandler):
         try:
@@ -62,6 +62,7 @@ class SvgCropper:
             return self.crop_handle_duplicate(src, onDuplicate(dst), onDuplicate)
 
     def finish(self):
+        self.process.stdin.flush()
         self.process.communicate("quit\n".encode())
         out = self.process.wait()
         return (out, self.process.stdout, self.process.stderr)

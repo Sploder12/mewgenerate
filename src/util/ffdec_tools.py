@@ -41,10 +41,10 @@ def dumpProduce(ffdecPath: str, swfPath: str, outDir: str):
     needsExport = True
     if (not FORCE_REDUMP):
         try:
-            dirs = os.listdir(outDir)
+            dirs = os.scandir(outDir)
             for entry in dirs:
-                fullPath = os.path.join(outDir, entry)
-                if os.path.isdir(fullPath) and "DefineSprite" in entry:
+                fullPath = os.path.join(outDir, entry.name)
+                if "DefineSprite" in entry.name and os.path.isdir(fullPath):
                     needsExport = False
                     break
         except FileNotFoundError:
