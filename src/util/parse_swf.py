@@ -20,6 +20,9 @@ class bit_reader:
         self.bits_left = 0
 
     def read_bits(self, n):
+        if n == 0:
+            return 0
+        
         # read n unsigned bits
         result = 0
         while n > 0:
@@ -43,6 +46,9 @@ class bit_reader:
         return result
 
     def read_signed_bits(self, n):
+        if n == 0:
+            return 0
+
         # read n signed bits
         value = self.read_bits(n)
         sign_bit = 1 << (n - 1)
