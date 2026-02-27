@@ -77,7 +77,7 @@ def getEvents() -> dict[str, Event]:
             chapter = "sewers"
 
         chaptername = CHAPNAMES.setdefault(chapter, "Unknown")
-        if (chapter == "dead" or chapter == "monster" or chapter == "misc" or chapter == "npc" or chapter == "treature" or chapter == "legacy"):
+        if (chapter == "dead" or chapter == "monster" or chapter == "misc" or chapter == "npc" or chapter == "treasure" or chapter == "legacy"):
             chaptername = "Common"
 
         if (chaptername != "Unknown" and chaptername != "Common"):

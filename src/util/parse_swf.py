@@ -64,6 +64,60 @@ class Rect:
         self.ymin = 0
         self.ymax = 0
 
+class Matrix:
+    # not in twips
+    xoffset: float = 0 
+    yoffset: float = 0
+
+    xscale: float = 1.0
+    yscale: float = 1.0
+
+    skew1: float = 0.0
+    skew2: float = 0.0
+
+    def __init__(self):
+        self.xoffset = 0.0
+        self.yoffset = 0.0
+        self.xscale = 1.0
+        self.yscale = 1.0
+        self.skew1 = 0.0
+        self.skew2 = 0.0
+
+    def transform(self, x: float, y: float):
+        newX = x * self.xscale + y * self.skew2 + self.xoffset
+        newY = x * self.skew1 + y * self.yscale + self.yoffset
+        return (newX, newY)
+
+class CXFORM:
+    redMult: float = 1
+    greenMult: float = 1
+    blueMult: float = 1
+    alphaMult: float = 1
+
+    redAdd: int = 0
+    greenAdd: int = 0
+    blueAdd: int = 0
+    alphaAdd: int = 0
+    
+    def __init__(self):
+        self.redMult = 1.0
+        self.greenMult = 1.0
+        self.blueMult = 1.0
+        self.alphaMult = 1.0
+
+        self.redAdd = 0
+        self.greenAdd = 0
+        self.blueAdd = 0
+        self.alphaAdd = 0
+
+    def transform(self, r: float, g: float, b: float, a: float):
+        nr = max(0.0, min(r * self.redMult + self.redAdd, 255.0))
+        ng = max(0.0, min(g * self.greenMult + self.greenAdd, 255.0))
+        nb = max(0.0, min(b * self.blueMult + self.blueAdd, 255.0))
+        na = max(0.0, min(a * self.alphaMult + self.alphaAdd, 255.0))
+
+        return (nr, ng, nb, na)
+
 class SWF:
     SHOW_FRAME = 1
     PLACE_OBJECT2 = 26
@@ -154,6 +208,88 @@ class SWF:
         return (out, byteCount)
 
     @staticmethod
+    def parseMATRIX(buffer: bytes, offset: int) -> tuple[Matrix, int]:
+        out = Matrix()
+
+        bits = 0
+        bitReader = bit_reader(buffer[offset:])
+
+        hasScale = bitReader.read_bits(1) == 1
+        bits += 1
+
+        if (hasScale):
+            nbits = bitReader.read_bits(5)
+            sxbits = bitReader.read_signed_bits(nbits)
+            sybits = bitReader.read_signed_bits(nbits)
+            bits += 5 + nbits * 2
+
+            out.xscale = sxbits / 65536.0
+            out.yscale = sybits / 65536.0
+
+
+        hasRotate = bitReader.read_bits(1) == 1
+        bits += 1
+
+        if (hasRotate):
+            nbits = bitReader.read_bits(5)
+            rs1bits = bitReader.read_signed_bits(nbits)
+            rs2bits = bitReader.read_signed_bits(nbits)
+            bits += 5 + nbits * 2
+
+            out.skew1 = rs1bits / 65536.0
+            out.skew2 = rs2bits / 65536.0
+
+        nBits = bitReader.read_bits(5)
+        out.xoffset = bitReader.read_signed_bits(nBits) / 20.0
+        out.yoffset = bitReader.read_signed_bits(nBits) / 20.0
+        bits += 5 + nBits * 2
+
+        return (out, math.ceil(bits / 8.0))
+    
+    @staticmethod
+    def parseCXFORMWITHALPHA(buffer: bytes, offset: int) -> tuple[CXFORM, int]:
+        out = CXFORM()
+
+        bits = 0
+        bitReader = bit_reader(buffer[offset:])
+
+        hasAdd = bitReader.read_bits(1) == 1
+        hasMult = bitReader.read_bits(1) == 1
+        nbits = bitReader.read_bits(4)
+        bits += 6
+
+        if hasMult:
+            out.redMult = bitReader.read_signed_bits(nbits) / 65536.0
+            out.greenMult = bitReader.read_signed_bits(nbits) / 65536.0
+            out.blueMult = bitReader.read_signed_bits(nbits) / 65536.0
+            out.alphaMult = bitReader.read_signed_bits(nbits) / 65536.0
+
+            bits += nbits * 4
+
+        if hasAdd:
+            out.redAdd = bitReader.read_signed_bits(nbits)
+            out.greenAdd = bitReader.read_signed_bits(nbits)
+            out.blueAdd = bitReader.read_signed_bits(nbits)
+            out.alphaAdd = bitReader.read_signed_bits(nbits)
+
+            bits += nbits * 4
+
+        return (out, math.ceil(bits / 8.0))
+
+    @staticmethod
+    def parseSTRING(buffer: bytes, offset: int) -> tuple[str, int]:
+        i = 0
+        while i + offset < len(buffer):
+            if (buffer[i] == 0):
+                return (buffer[offset: offset + i].decode("utf-8"), i + 1)
+
+            i += 1 
+
+        raise RuntimeError("Failed to parse SWF STRING")
+
+
+
+    @staticmethod
     def parseHeader(buffer: bytes, offset: int) -> tuple[Header, int]:
         out = SWF.Header()
 
@@ -239,6 +375,11 @@ class DefineSprite:
 class PlaceObject2:
     depth: int
     character: int | None
+    matrix: Matrix | None
+    cxform: CXFORM | None
+    ratio: int | None
+    name: str | None
+    clipdepth: int | None
 
     def __init__(self, tag: SWF.Tag):
         if (tag.type != SWF.PLACE_OBJECT2):
@@ -251,11 +392,36 @@ class PlaceObject2:
         offset += 2
 
         self.character = None
-        if flags & 0b00000010 > 0:
+        if flags & 0b00000010 > 0: # HasCharacter
             self.character = struct.unpack_from("<H", tag.data, offset)[0]
             offset += 2
 
-        # ignoring matrix and whatnot because it scares me. (and is not needed for our uses)
+        self.matrix = None
+        if flags & 0b00000100 > 0: # HasMatrix
+            self.matrix, o = SWF.parseMATRIX(tag.data, offset)
+            offset += o
+
+        self.cxform = None
+        if flags & 0b00001000 > 0: # HasColorTransform
+            self.cxform, o = SWF.parseCXFORMWITHALPHA(tag.data, offset)
+            offset += o
+
+        self.ratio = None
+        if flags & 0b00010000 > 0: # HasRatio
+            self.ratio = struct.unpack_from("<H", tag.data, offset)[0]
+            offset += 2
+
+        self.name = None
+        if flags & 0b00100000 > 0: # HasName
+            self.name, o = SWF.parseSTRING(tag.data, offset)
+            offset += o
+
+        self.clipdepth = None
+        if flags & 0b01000000 > 0: # HasClipDepth
+            self.clipdepth = struct.unpack_from("<H", tag.data, offset)[0]
+            offset += 2
+
+        # ignoring clipactions because it scares me. (and is not needed for our uses)
 
 class FrameLabel:
     label: str
