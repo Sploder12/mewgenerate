@@ -8,6 +8,7 @@
 import io
 import math
 import struct
+from typing import Any
 
 class bit_reader:
     stream: io.BytesIO
@@ -58,11 +59,11 @@ class bit_reader:
         return value
 
 class Rect:
-    # measured in twips
-    xmin: int
-    xmax: int
-    ymin: int
-    ymax: int
+    # not in twips
+    xmin: float
+    xmax: float
+    ymin: float
+    ymax: float
 
     def __init__(self):
         self.xmin = 0
@@ -126,6 +127,12 @@ class CXFORM:
 
 class SWF:
     SHOW_FRAME = 1
+    DEFINE_SHAPE = 2
+    DEFINE_SHAPE2 = 22
+    DEFINE_SHAPE3 = 32
+    DEFINE_SHAPE4 = 83
+    DEFINE_SHAPE_SET = {DEFINE_SHAPE, DEFINE_SHAPE2, DEFINE_SHAPE3, DEFINE_SHAPE4}
+
     PLACE_OBJECT2 = 26
     DEFINE_SPRITE = 39
     FRAME_LABEL = 43
@@ -161,7 +168,7 @@ class SWF:
             match (self.type):
                 case SWF.SHOW_FRAME:
                     return "ShowFrame"
-                case 2:
+                case SWF.DEFINE_SHAPE:
                     return "DefineShape"
                 case 4:
                     return "PlaceObject"
@@ -170,13 +177,13 @@ class SWF:
                 case 9:
                     return "SetBackgroundColor"
                 
-                case 22:
+                case SWF.DEFINE_SHAPE2:
                     return "DefineShape2"
                 case SWF.PLACE_OBJECT2:
                     return "PlaceObject2"
                 case 28:
                     return "RemoveObject2"
-                case 32:
+                case SWF.DEFINE_SHAPE3:
                     return "DefineShape3"
 
                 case SWF.DEFINE_SPRITE:
@@ -193,7 +200,7 @@ class SWF:
                     return "SymbolClass"
                 case 82:
                     return "DoABC"
-                case 83:
+                case SWF.DEFINE_SHAPE4:
                     return "DefineShape4"
             
             return "Unknown"
@@ -205,10 +212,10 @@ class SWF:
         out = Rect()
 
         nbits = reader.read_bits(5)
-        out.xmin = reader.read_signed_bits(nbits)
-        out.xmax = reader.read_signed_bits(nbits)
-        out.ymin = reader.read_signed_bits(nbits)
-        out.ymax = reader.read_signed_bits(nbits)
+        out.xmin = reader.read_signed_bits(nbits) / 20.0
+        out.xmax = reader.read_signed_bits(nbits) / 20.0
+        out.ymin = reader.read_signed_bits(nbits) / 20.0
+        out.ymax = reader.read_signed_bits(nbits) / 20.0
 
         byteCount = math.ceil((5.0 + nbits * 4.0) / 8.0)
         return (out, byteCount)
@@ -355,6 +362,23 @@ class SWF:
             offset += count
 
     
+class DefineShape:
+    id: int
+    bounds: Rect
+    # shapes is ignored cause not needed
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type not in SWF.DEFINE_SHAPE_SET):
+            raise TypeError("tag is not a DefineShape tag")
+        
+        self.id = struct.unpack_from("<H", tag.data, 0)[0]
+        offset = 2
+
+        self.bounds, o = SWF.parseRECT(tag.data, offset)
+        offset += o
+
+        # Shapes
+        
 class DefineSprite:
     id: int
     frames: int
@@ -480,6 +504,20 @@ def getAllSprites(tags: SWF) -> dict[int, DefineSprite]:
 
     return allSprites
 
+def getCharacterDict(tags: SWF) -> dict[int, Any]:
+    charDict = {}
+
+    for tag in tags.tags:
+        if (tag.type in SWF.DEFINE_SHAPE_SET):
+            dshape = DefineShape(tag)
+            charDict[dshape.id] = dshape
+        
+        elif (tag.type == SWF.DEFINE_SPRITE):
+            dsprite = DefineSprite(tag)
+            charDict[dsprite.id] = dsprite
+
+    return charDict
+
 def getSymbolTable(tags: SWF) -> dict[str, int]:
     symbolTable = {}
     for tag in tags.tags:
@@ -490,21 +528,31 @@ def getSymbolTable(tags: SWF) -> dict[str, int]:
 
     return symbolTable
 
+
+class Frame:
+    name: str = ""
+    tags: list[SWF.Tag]
+
+    def __init__(self):
+        self.name = ""
+        self.tags = []
+
+
 # useful for abilities and passives
 # but not furniture, furniture uses a 2nd indirection
-def extractSpriteNames(sprite: DefineSprite) -> dict[str, int]:
-    lookup: dict[str, int] = {}
+def splitSpriteFrames(sprite: DefineSprite) -> list[Frame]:
+    out = []
 
-    curLabel = ""
-    curID = 1
+    curFrame = Frame()
     for frame in sprite.tags:
-        if (frame.type == SWF.FRAME_LABEL):
-            curLabel = FrameLabel(frame).label
-        elif (frame.type == SWF.SHOW_FRAME):
-            if (curLabel != ""):
-                lookup[curLabel] = curID
-                curLabel = ""
-    
-            curID += 1
+        match frame.type:
+            case SWF.FRAME_LABEL:
+                curFrame.name = FrameLabel(frame).label
 
-    return lookup
+            case SWF.SHOW_FRAME:
+                out.append(curFrame)
+                curFrame = Frame()
+            case _:
+                curFrame.tags.append(frame)
+
+    return out

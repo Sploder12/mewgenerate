@@ -162,47 +162,47 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
 
         os.makedirs(folder)
 
-        def setComponent(uid: str, id: str, src: svg.SvgData, dest: svg.SvgData, reverseOrder = False):
-            tag = dest.findComposite(id)
-            if tag == None:
-                return False
+        # def setComponent(uid: str, id: str, src: svg.SvgData, dest: svg.SvgData, reverseOrder = False):
+        #     tag = dest.findComposite(id)
+        #     if tag == None:
+        #         return False
             
-            transform = tag.getTransform().split(',')
+        #     transform = tag.getTransform().split(',')
 
-            src.prefixLinks(uid)
+        #     src.prefixLinks(uid)
 
-            if reverseOrder:
-                dest.defs.subcomponents = src.defs.subcomponents + dest.defs.subcomponents
-            else:
-                dest.defs.subcomponents += src.defs.subcomponents
+        #     if reverseOrder:
+        #         dest.defs.subcomponents = src.defs.subcomponents + dest.defs.subcomponents
+        #     else:
+        #         dest.defs.subcomponents += src.defs.subcomponents
 
-            # @TODO figure out transforms (try rebase on 0?)
-            #src.decl.setTransform(f"matrix({"-1.0" if '-' in transform[0] else "1.0"}, 0.0, 0.0, {"-1.0" if '-' in transform[3] else "1.0"}, {transform[4]}, {transform[5]}")
-            dest.replaceComposite(id, src.decl)
+        #     # @TODO figure out transforms (try rebase on 0?)
+        #     #src.decl.setTransform(f"matrix({"-1.0" if '-' in transform[0] else "1.0"}, 0.0, 0.0, {"-1.0" if '-' in transform[3] else "1.0"}, {transform[4]}, {transform[5]}")
+        #     dest.replaceComposite(id, src.decl)
 
-            return True
+        #     return True
 
-        def setTex(uid: str, svgdata: svg.SvgData, texture: int):
-            tex = svg.parse_svg(textureDir + '/' + str(texture) + ".svg")
-            return setComponent(uid, "tex", tex, svgdata)
+        # def setTex(uid: str, svgdata: svg.SvgData, texture: int):
+        #     tex = svg.parse_svg(textureDir + '/' + str(texture) + ".svg")
+        #     return setComponent(uid, "tex", tex, svgdata)
 
-        out = svg.parse_svg(headPlacementDir + '/' + str(cat.head.frame) + ".svg")
-        keep = []
-        for sub in out.decl.subcomponents:
-            if sub.getTagname() == "use" and sub.getID() == "":
-                keep.append(out.defs.findComposite(sub.getHrefID()))
+        # out = svg.parse_svg(headPlacementDir + '/' + str(cat.head.frame) + ".svg")
+        # keep = []
+        # for sub in out.decl.subcomponents:
+        #     if sub.getTagname() == "use" and sub.getID() == "":
+        #         keep.append(out.defs.findComposite(sub.getHrefID()))
 
-        out.defs.subcomponents.clear()
-        for k in keep:
-            if k != None:
-                out.defs.subcomponents.append(k)
+        # out.defs.subcomponents.clear()
+        # for k in keep:
+        #     if k != None:
+        #         out.defs.subcomponents.append(k)
 
-        setTex("head_", out, cat.head.texture)
+        # setTex("head_", out, cat.head.texture)
 
-        declaw(legDir + '/' + str(cat.leg1.frame) + ".svg", folder + "/leg1.svg")
-        declaw(legDir + '/' + str(cat.leg2.frame) + ".svg", folder + "/leg2.svg")
-        declaw(legDir + '/' + str(cat.arm1.frame) + ".svg", folder + "/arm1.svg")
-        declaw(legDir + '/' + str(cat.arm2.frame) + ".svg", folder + "/arm2.svg")
+        # declaw(legDir + '/' + str(cat.leg1.frame) + ".svg", folder + "/leg1.svg")
+        # declaw(legDir + '/' + str(cat.leg2.frame) + ".svg", folder + "/leg2.svg")
+        # declaw(legDir + '/' + str(cat.arm1.frame) + ".svg", folder + "/arm1.svg")
+        # declaw(legDir + '/' + str(cat.arm2.frame) + ".svg", folder + "/arm2.svg")
 
         #deage(headDir + '/' + str(cat.head.frame) + ".svg", folder + "/head.svg")
         
@@ -236,30 +236,30 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
         #if (cat.head.texture != cat.texture):
         #    svgCropper.crop(textureDir + '/' + str(cat.head.texture) + ".svg", folder + "/head_texture.svg")
 
-        mouth = svg.parse_svg(mouthDir + '/' + str(cat.mouth.frame) + ".svg")
-        setTex("mouth_", mouth, cat.mouth.texture)
-        setComponent("mouth_", "mouth", mouth, out)
+        # mouth = svg.parse_svg(mouthDir + '/' + str(cat.mouth.frame) + ".svg")
+        # setTex("mouth_", mouth, cat.mouth.texture)
+        # setComponent("mouth_", "mouth", mouth, out)
 
-        leye = svg.parse_svg(eyeDir + '/' + str(cat.lefteye.frame) + ".svg")
-        setTex("leye_", leye, cat.lefteye.texture)
-        setComponent("leye_", "leye", leye, out)
+        # leye = svg.parse_svg(eyeDir + '/' + str(cat.lefteye.frame) + ".svg")
+        # setTex("leye_", leye, cat.lefteye.texture)
+        # setComponent("leye_", "leye", leye, out)
 
-        reye = svg.parse_svg(rightEyeDir + '/' + str(cat.righteye.frame) + ".svg")
-        setTex("reye_", reye, cat.righteye.texture)
-        setComponent("reye_", "reye", reye, out)
+        # reye = svg.parse_svg(rightEyeDir + '/' + str(cat.righteye.frame) + ".svg")
+        # setTex("reye_", reye, cat.righteye.texture)
+        # setComponent("reye_", "reye", reye, out)
 
-        lear = svg.parse_svg(earDir + '/' + str(cat.leftear.frame) + ".svg")
-        setTex("lear_", lear, cat.leftear.texture)
+        # lear = svg.parse_svg(earDir + '/' + str(cat.leftear.frame) + ".svg")
+        # setTex("lear_", lear, cat.leftear.texture)
 
-        palette.applyPalette(palettes[cat.palette], lear)
-        with open(f"{folder}/test_lear.svg", "w") as of:
-            of.write(lear.compile())
+        # palette.applyPalette(palettes[cat.palette], lear)
+        # with open(f"{folder}/test_lear.svg", "w") as of:
+        #     of.write(lear.compile())
 
-        setComponent("lear_", "lear", lear, out, True)
+        # setComponent("lear_", "lear", lear, out, True)
 
-        rear = svg.parse_svg(earDir + '/' + str(cat.rightear.frame) + ".svg")
-        setTex("rear_", rear, cat.rightear.texture)
-        setComponent("rear_", "rear", rear, out, True)
+        # rear = svg.parse_svg(earDir + '/' + str(cat.rightear.frame) + ".svg")
+        # setTex("rear_", rear, cat.rightear.texture)
+        # setComponent("rear_", "rear", rear, out, True)
  
         svgCropper.crop(eyebrowDir + '/' + str(cat.lefteyebrow.frame) + ".svg", folder + "/lefteyebrow.svg")
         if (cat.lefteyebrow.texture != cat.texture):
@@ -269,9 +269,9 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str,cats: list[Custo
         if (cat.righteyebrow.texture != cat.texture):
             svgCropper.crop(textureDir + '/' + str(cat.righteyebrow.texture) + ".svg", folder + "/righteyebrow_texture.svg")
         
-        palette.applyPalette(palettes[cat.palette], out)
-        with open(f"{folder}/{cat.id}.svg", "w") as of:
-            of.write(out.compile())
+        #palette.applyPalette(palettes[cat.palette], out)
+        #with open(f"{folder}/{cat.id}.svg", "w") as of:
+        #    of.write(out.compile())
 
         #svgCropper.crop(f"{folder}/{cat.id}.svg", f"{folder}/{cat.id}.svg")
         count += 1

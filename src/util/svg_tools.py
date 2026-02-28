@@ -233,39 +233,23 @@ class SvgData:
             return out
        
     xmlVersion: str
-    header: str # <svg>
-    decl: Composite
-    defs: Composite
+    data: Composite
 
-    def __init__(self, xmlVersion: str, header: str, decl: Composite, defs: Composite):
+    def __init__(self, xmlVersion: str, data: Composite):
         self.xmlVersion = xmlVersion
-        self.header = header
-        self.decl = decl
-        self.defs = defs
+        self.data = data
 
     def compile(self) -> str:
-        out = self.xmlVersion + self.header + self.decl.compile() + self.defs.compile()
-        out += "</svg>\n"
-        return out
+        return self.xmlVersion + self.data.compile()
     
     def replaceComposite(self, id: str, replacement: Composite | None):
-        return self.decl.replaceComposite(id, replacement) + self.defs.replaceComposite(id, replacement)
+        return self.data.replaceComposite(id, replacement)
 
     def removeComposite(self, id: str):
         return self.replaceComposite(id, None)
 
     def findComposite(self, id: str) -> Composite | None:
-        r = self.decl.findComposite(id)
-        if (r != None):
-            return r
-        
-        return self.defs.findComposite(id)
-    
-    def prefixLinks(self, prefix: str):
-        self.decl.prefixLinks(prefix)
-
-        self.defs.prefixIds(prefix)
-        self.defs.prefixLinks(prefix)
+        return self.data.findComposite(id)
     
     @staticmethod 
     def parseComposite(lines: list[str]) -> Composite:
@@ -317,41 +301,10 @@ class SvgData:
                 end = i
 
         ts = SvgData.parseComposite(lines[1:end])
-
-        if (len(ts.subcomponents) != 2):
-            if (len(ts.subcomponents) == 1):
-                return SvgData(lines[0], lines[1], ts.subcomponents[0], SvgData.Composite("<defs></defs>", []))
-            else:
-                return SvgData(lines[0], lines[1], SvgData.Composite("<g></g>", []), SvgData.Composite("<defs></defs>", []))
-
-        return SvgData(lines[0], lines[1], ts.subcomponents[0], ts.subcomponents[1])
+        return SvgData(lines[0], ts)
 
 def parse_svg(filename: str) -> SvgData:
     with open(filename, "r") as f:
         content = f.readlines()
 
     return SvgData.parseSVG(content)
-
-
-if __name__ == "__main__":
-    cropper = SvgCropper("C:/Program Files/Inkscape/bin/inkscape.com")
-    for i in range(1, 11):
-        test = parse_svg("./cache/swfdump/catparts/DefineSprite_601/1.svg")
-        test2 = parse_svg(f"./cache/swfdump/catparts/DefineSprite_599/{i}.svg")
-        test2.prefixLinks("bg_")
-
-        test.defs.subcomponents += test2.defs.subcomponents
-
-        bgtag = test.findComposite("bg")
-        transform = bgtag.getTransform()
-
-        test2.decl.setTransform(transform)
-        test.replaceComposite("bg", test2.decl)
-
-        with open(f"./out/frozen_bone {i}.svg", "w") as o:
-            o.write(test.compile())
-
-        
-        cropper.crop(f"./out/frozen_bone {i}.svg", f"./out/frozen_bone {i}.svg")
-
-    cropper.finish()

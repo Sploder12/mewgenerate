@@ -88,7 +88,9 @@ def getPassives() -> list[Passive]:
 
     dsprites = swf.getAllSprites(swftags)
     stable = swf.getSymbolTable(swftags)
-    frames = swf.extractSpriteNames(dsprites[stable["PassiveIcon"]])
+    frames = swf.splitSpriteFrames(dsprites[stable["PassiveIcon"]])
+
+    frameDict = {frame.name: i for i, frame in enumerate(frames)}
     
     out = []
 
@@ -98,10 +100,10 @@ def getPassives() -> list[Passive]:
         gondata = gon.parse_gon(fullpath)
 
         for id, data in gondata.items():
-            if (id == "__COMMENTS__" or id not in frames):
+            if (id == "__COMMENTS__" or id not in frameDict):
                 continue
 
-            out.append(Passive(id, frames[id], data))
+            out.append(Passive(id, frameDict[id], data))
 
     return out
 
@@ -133,7 +135,9 @@ def getActives() -> list[Active]:
 
     dsprites = swf.getAllSprites(swftags)
     stable = swf.getSymbolTable(swftags)
-    frames = swf.extractSpriteNames(dsprites[stable["AbilityIcon"]])
+    frames = swf.splitSpriteFrames(dsprites[stable["AbilityIcon"]])
+
+    frameDict = {frame.name: i for i, frame in enumerate(frames)}
     
     out = []
 
@@ -143,13 +147,13 @@ def getActives() -> list[Active]:
         gondata = gon.parse_gon(fullpath)
 
         for id, data in gondata.items():
-            if (id == "__COMMENTS__" or id not in frames):
+            if (id == "__COMMENTS__" or id not in frameDict):
                 continue
 
             if ("meta" not in data):
                 continue
 
-            out.append(Active(id, frames[id], data))
+            out.append(Active(id, frameDict[id], data))
 
     return out
 

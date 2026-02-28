@@ -15,6 +15,8 @@ import argparse
 import threading
 from datetime import datetime
 
+DEBUG = True
+
 ffdecDefault = "C:/Program Files (x86)/FFDec/ffdec-cli.exe" if os.name == "nt" else "ffdec-cli"
 inkscapeDefault = "C:/Program Files/Inkscape/bin/inkscape.com" if os.name == "nt" else "inkscape"
 outDirDefault = "./out"
@@ -24,12 +26,17 @@ def timedExport(name: str, exportFnc, inkscape: str, ffdec: str, outdir: str):
     with svg.SvgCropper(inkscape) as svgCropper:
         logging.info(f"Exporting {name}...")
 
-        try:
+        if not DEBUG:
+            try:
+                result = exportFnc(svgCropper, ffdec, outdir)
+                delta = datetime.now() - start
+                logging.info(f"Exported {result} {name} in {delta.seconds} seconds")
+            except Exception as e:
+                logging.error(f"Failed to export {name}: {e}")
+        else:
             result = exportFnc(svgCropper, ffdec, outdir)
             delta = datetime.now() - start
             logging.info(f"Exported {result} {name} in {delta.seconds} seconds")
-        except Exception as e:
-            logging.error(f"Failed to export {name}: {e}")
 
 
 def exportItems(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
@@ -83,9 +90,7 @@ def main():
 
     args = parser.parse_args()
 
-    args.verbose = True
-
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG if args.verbose else logging.INFO)
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG if args.verbose or DEBUG else logging.INFO)
     if (args.force_redump):
         logging.debug("force-redump=True")
         ffdec.FORCE_REDUMP = True
@@ -113,27 +118,73 @@ def main():
     delta = datetime.now() - start
     logging.info(f"Finished exporting in {delta.seconds} seconds")
 
-#ICONS_SWF = "./data/swfs/portraits.swf"
-#
-#dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, ICONS_SWF, ffdec.SWF_DUMP_DIR)
-#
-#dirs = os.listdir(dumpdir)
-#for dir in dirs:
-#    break
-#    fullPath = os.path.join(dumpdir, dir)
-#    if (os.path.isdir(fullPath)) and dir.startswith("DefineSprite"):
-#        name = '_'.join(dir.split('_')[2:])
-#        if (name == ""):
-#            name = dir.split('_')[1]
-#
-#        files = dirs = os.listdir(fullPath)
-#        for file in files:
-#            p = os.path.join(fullPath, file)
-#            fname = name + "_" + file
-#
-#            shutil.copyfile(p, f"./out/icons/{fname}")
+# ICONS_SWF = "./data/swfs/portraits.swf"
 
+# import shutil
+# import src.util.parse_gon as gon
+# import src.translations as translations
+# dumpdir = ffdec.exportSpritesIfNeeded(ffdecDefault, ICONS_SWF, ffdec.SWF_DUMP_DIR)
 
+# os.makedirs("./out/icons", exist_ok=True)
+# dirs = os.listdir(dumpdir)
+# shutil.rmtree("./out/icons")
+
+# gons = gon.parse_gon("./data/data/characters/bosses.gon")
+# gons |= gon.parse_gon("./data/data/characters/bonus_birds.gon")
+# gons |= gon.parse_gon("./data/data/characters/cat_enemies.gon")
+# gons |= gon.parse_gon("./data/data/characters/cat_minibosses.gon")
+# gons |= gon.parse_gon("./data/data/characters/druid_friends.gon")
+# gons |= gon.parse_gon("./data/data/characters/enemies.gon")
+# gons |= gon.parse_gon("./data/data/characters/familiars.gon")
+# gons |= gon.parse_gon("./data/data/characters/finalboss.gon")
+# gons |= gon.parse_gon("./data/data/characters/guillotina.gon")
+# gons |= gon.parse_gon("./data/data/characters/kaijus.gon")
+# gons |= gon.parse_gon("./data/data/characters/minibosses.gon")
+# gons |= gon.parse_gon("./data/data/characters/nemesis_bosses.gon")
+# gons |= gon.parse_gon("./data/data/characters/rifthead.gon")
+# gons |= gon.parse_gon("./data/data/characters/small_enemies.gon")
+# gons |= gon.parse_gon("./data/data/characters/terminator.gon")
+# gons |= gon.parse_gon("./data/data/characters/throbbing_king.gon")
+# gons |= gon.parse_gon("./data/data/characters/world_event_specials.gon")
+
+# cropper = svg.SvgCropper(inkscapeDefault)
+
+# for dir in dirs:
+#     fullPath = os.path.join(dumpdir, dir)
+#     if (os.path.isdir(fullPath)) and dir.startswith("DefineSprite"):
+#         name = '_'.join(dir.split('_')[2:])
+#         if (name == ""):
+#             name = dir.split('_')[1]
+
+#         name = name.removesuffix("Portrait")
+#         isChampion = name.endswith("Champion")
+#         name = name.removesuffix("Champion")
+
+#         files = dirs = os.listdir(fullPath)
+#         for file in files:
+#             p = os.path.join(fullPath, file)
+            
+#             fname = f"{name}_{file}"
+#             if (name in gons):
+#                 data = gons[name]
+#                 if "graphics" not in data:
+#                     continue
+
+#                 g = data["graphics"]
+#                 if "name" not in g:
+#                     continue
+
+#                 if "FAMILIAR" in g["name"]:
+#                     continue
+
+#                 fname = "ENEMY " + translations.get(g["name"])
+
+#                 if isChampion:
+#                     fname += " (Champion)"
+
+#                 cropper.crop_handle_duplicate(p, f"./out/icons/{fname}.svg")
+
+# cropper.finish()
 
 
 # areaObjs = {}
