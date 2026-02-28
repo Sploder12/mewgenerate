@@ -136,9 +136,6 @@ def main():
 
 
 
-
-
-
 # areaObjs = {}
 # objsArea = {}
 

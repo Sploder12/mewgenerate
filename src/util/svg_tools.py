@@ -1,6 +1,9 @@
 import os
 import subprocess
 import logging
+import uuid
+import tempfile
+import shutil
 
 from typing import Callable, Self
 
@@ -22,13 +25,24 @@ def defaultDuplicateHandler(filename: str) -> str:
 
 class SvgCropper:
     process: subprocess.Popen[bytes]
+    id: uuid.UUID
 
     def __init__(self, inkscapePath: str):
+        self.id = uuid.uuid4()
+
+        tmpdir = f"{tempfile.gettempdir()}/inkscape_{self.id}"
+        os.makedirs(tmpdir, exist_ok=True)
+
+        # there is no way to disable GTK's recent files
+        # and it doesn't handle multiple writers properly
+        env = os.environ.copy()
+        env["XDG_DATA_HOME"] = tmpdir
+
         command = [
             inkscapePath,
             "--shell",
         ]
-        self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+        self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, env=env)
 
     def __enter__(self):
         return self
@@ -65,6 +79,7 @@ class SvgCropper:
         self.process.stdin.flush()
         self.process.communicate("quit\n".encode())
         out = self.process.wait()
+        shutil.rmtree(f"{tempfile.gettempdir()}/inkscape_{self.id}", ignore_errors=True)
         return (out, self.process.stdout, self.process.stderr)
     
 
