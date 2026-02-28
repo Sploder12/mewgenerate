@@ -3,7 +3,7 @@ import logging
 from PIL import Image
 logging.getLogger("PIL").setLevel(logging.WARNING)
 
-from .util import svg_tools as svg
+from ..util import svg_tools as svg
 
 PALETTE_PATH = "./data/textures/palette.png"
 
@@ -37,8 +37,7 @@ def loadPalettes(src: str) -> list[Palette]:
 
 def applyPalette(palette: Palette, svgdata: svg.SvgData | svg.SvgData.Composite):
     if isinstance(svgdata, svg.SvgData):
-        applyPalette(palette, svgdata.decl)
-        applyPalette(palette, svgdata.defs)
+        applyPalette(palette, svgdata.data)
         return
     
     if "fill=\"#" in svgdata.header:

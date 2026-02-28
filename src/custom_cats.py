@@ -5,7 +5,7 @@ from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
 from .util import svg_tools as svg
 
-from . import palette
+from .catgen import palette
 
 import os
 import shutil

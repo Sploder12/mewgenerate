@@ -134,6 +134,7 @@ class SWF:
     DEFINE_SHAPE_SET = {DEFINE_SHAPE, DEFINE_SHAPE2, DEFINE_SHAPE3, DEFINE_SHAPE4}
 
     PLACE_OBJECT2 = 26
+    REMOVE_OBJECT2 = 28
     DEFINE_SPRITE = 39
     FRAME_LABEL = 43
     SYMBOL_CLASS = 76
@@ -181,7 +182,7 @@ class SWF:
                     return "DefineShape2"
                 case SWF.PLACE_OBJECT2:
                     return "PlaceObject2"
-                case 28:
+                case SWF.REMOVE_OBJECT2:
                     return "RemoveObject2"
                 case SWF.DEFINE_SHAPE3:
                     return "DefineShape3"
@@ -453,6 +454,15 @@ class PlaceObject2:
 
         # ignoring clipactions because it scares me. (and is not needed for our uses)
 
+class RemoveObject2:
+    depth: int
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type != SWF.REMOVE_OBJECT2):
+            raise TypeError("tag is not a RemoveObject2 tag")
+
+        self.depth = struct.unpack("<H", tag.data)[0]
+
 class FrameLabel:
     label: str
 
@@ -503,6 +513,16 @@ def getAllSprites(tags: SWF) -> dict[int, DefineSprite]:
             allSprites[dsprite.id] = dsprite
 
     return allSprites
+
+def getAllShapes(tags: SWF) -> dict[int, DefineShape]:
+    allShapes = {}
+
+    for tag in tags.tags:
+        if (tag.type in SWF.DEFINE_SHAPE_SET):
+            dshape = DefineShape(tag)
+            allShapes[dshape.id] = dshape
+
+    return allShapes
 
 def getCharacterDict(tags: SWF) -> dict[int, Any]:
     charDict = {}

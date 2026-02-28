@@ -5,7 +5,7 @@ import uuid
 import tempfile
 import shutil
 
-from typing import Callable, Self
+from typing import Any, Callable, Self
 
 
 def defaultDuplicateHandler(filename: str) -> str:
@@ -118,66 +118,47 @@ class SvgData:
         
         def getTagname(self):
             return SvgData.getTagname(self.header)
+        
+        def getField(self, field: str) -> str:
+            field += "=\""
+            if field not in self.header:
+                return ""
+            
+            s = self.header.find(field) + len(field)
+            e = self.header.find('"', s)
+            return self.header[s:e]
+        
+        def setField(self, field: str, value: str):
+            field += "=\""
+            if field in self.header:
+                s = self.header.find(field) + len(field)
+                e = self.header.find('"', s)
+
+                self.header = self.header[:s] + value + self.header[e:]
+            else:
+                tag = self.getTagname()
+                s = self.header.find(tag) + len(tag)
+                
+                self.header = f"{self.header[:s]} {field}{value}\" {self.header[s:]}"
+
 
         def getID(self) -> str:
-            if "id=\"" in self.header:
-                s = self.header.find("id=\"") + 4
-                e = self.header.find('"', s)
-
-                return self.header[s:e]
-        
-            return ""
+            return self.getField("id")
         
         def setID(self, id: str):
-            if ("id=\"" in self.header):
-                s = self.header.find("id=\"") + 4
-                e = self.header.find('"', s)
-
-                self.header = self.header[:s] + id + self.header[e:]
-            else:
-                tag = self.getTagname()
-                s = self.header.find(tag) + len(tag)
-                
-                self.header = self.header[:s] + " id=\"" + id + "\" " + self.header[s:]
+            self.setField("id", id)
 
         def getHrefID(self):
-            if "xlink:href=\"#" in self.header:
-                s = self.header.find("xlink:href=\"#") + 13
-                e = self.header.find('"', s)
-
-                return self.header[s:e]
-        
-            return ""
+            return self.getField("xlink:href")
         
         def setHrefID(self, id: str):
-            if "xlink:href=\"#" in self.header:
-                s = self.header.find("xlink:href=\"#") + 13
-                e = self.header.find('"', s)
-
-                self.header = self.header[:s] + id + self.header[e:]
-            else:
-                raise RuntimeError(f"setting href of non <use> tag {self.getTagname()}")
+            self.setField("xlink:href", '#' + id)
 
         def getTransform(self):
-            if "transform=\"" in self.header:
-                s = self.header.find("transform=\"") + 11
-                e = self.header.find('"', s)
-
-                return self.header[s:e]
-
-            return ""
+            return self.getField("transform")
         
         def setTransform(self, transform: str):
-            if "transform=\"" in self.header:
-                s = self.header.find("transform=\"") + 11
-                e = self.header.find('"', s)
-
-                self.header = self.header[:s] + transform + self.header[e:]
-            else:
-                tag = self.getTagname()
-                s = self.header.find(tag) + len(tag)
-                
-                self.header = self.header[:s] + " transform=\"" + transform + "\" " + self.header[s:]
+            self.setField("transform", transform)
 
         def replaceComposite(self, id: str, replacement: Self | None):
             count = 0
@@ -231,6 +212,11 @@ class SvgData:
                 out += f"</{self.getTagname()}>\n"
 
             return out
+        
+        def forEach(self, fn: Callable[[Self], Any]):
+            fn(self)
+            for child in self.subcomponents:
+                child.forEach(fn)
        
     xmlVersion: str
     data: Composite
@@ -250,6 +236,9 @@ class SvgData:
 
     def findComposite(self, id: str) -> Composite | None:
         return self.data.findComposite(id)
+    
+    def forEach(self, fn: Callable[[Composite], Any]):
+        return self.data.forEach(fn)
     
     @staticmethod 
     def parseComposite(lines: list[str]) -> Composite:
