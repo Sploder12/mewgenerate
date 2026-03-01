@@ -40,21 +40,26 @@ def timedExport(name: str, exportFnc, inkscape: str, ffdec: str, outdir: str):
 
 
 def exportItems(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return 0
     return items.exportItems(svgCropper, ffdec, items.getItems(), outdir)
 
 def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
-    return furniture.exportFurniture(svgCropper, ffdec, furniture.getFurniture(), outdir)
+    return furniture.exportFurniture(svgCropper, ffdec, outdir)
 
 def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return 0
     return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats(), outdir)
 
 def exportActives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return 0
     return abilities.exportActives(svgCropper, ffdec, abilities.getActives(), outdir)
 
 def exportPassives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return 0
     return abilities.exportPassives(svgCropper, ffdec, abilities.getPassives(), outdir)
 
 def exportStatus(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
+    return 0
     return status.exportStatuses(svgCropper, ffdec, [], outdir)
 
 def exportEvents(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):

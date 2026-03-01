@@ -18,7 +18,7 @@ def export(ffdecPath: str, swfPath: str, types: list[str], outDir: str):
         "-importAssets",
         "yes,local",
         "-format",
-        "sprite:svg,shape:svg",
+        "sprite:svg,shape:svg,text:svg",
         "-onerror",
         "ignore",
         "-export",
@@ -40,20 +40,12 @@ def dumpProduce(ffdecPath: str, swfPath: str, outDir: str):
     logging.debug(f"thread {threading.get_ident()} dumping {swfPath}")
     needsExport = True
     if (not FORCE_REDUMP):
-        try:
-            dirs = os.scandir(outDir)
-            for entry in dirs:
-                fullPath = os.path.join(outDir, entry.name)
-                if "DefineSprite" in entry.name and os.path.isdir(fullPath):
-                    needsExport = False
-                    break
-        except FileNotFoundError:
-            pass
+        needsExport = not os.path.exists(os.path.join(outDir, "shapes", "1.svg"))
 
     if (needsExport):
         logging.debug(f"cache miss {"(forced) " if FORCE_REDUMP else ''}for {swfPath}")
         start = datetime.now()
-        code, _, stderr = export(ffdecPath, swfPath, ["sprite"], outDir)
+        code, _, stderr = export(ffdecPath, swfPath, ["shape", "text"], outDir)
         if (len(stderr) > 0):
             logging.warning(f"FFDec error with code {code}: {stderr}")
 
@@ -68,7 +60,7 @@ def dumpProduce(ffdecPath: str, swfPath: str, outDir: str):
 exportMap = sync.MapSync[str](dumpProduce, dumpOnWait, dumpOnWaitEnd)
 
 # adjusts outDir to have <swf name>/ appended
-def exportSpritesIfNeeded(ffdecPath: str, swfPath: str, outDir: str = SWF_DUMP_DIR):
+def exportShapesIfNeeded(ffdecPath: str, swfPath: str, outDir: str = SWF_DUMP_DIR):
     outDir += "/" + pathlib.Path(swfPath).stem
     return exportMap.get(outDir, ffdecPath, swfPath, outDir)
 

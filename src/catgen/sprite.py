@@ -3,6 +3,7 @@ from ..util import parse_swf as swf
 from . import swf_tree as tree
 
 import os
+import uuid
 
 class Sprite:
     @staticmethod
@@ -51,7 +52,10 @@ class Sprite:
 
         return (w, h)
 
-    def applyTransform(self, xform: swf.CXFORM | swf.Matrix):
+    def applyTransform(self, xform: swf.CXFORM | swf.Matrix | None):
+        if (xform == None): # makes things a bit simpler
+            return self
+
         def applyCXFORM(data: svg.SvgData.Composite):
             if ("fill=\"#" in data.header):
                 r, g, b = Sprite.rgbFromSVG(data.getField("fill"))
@@ -76,6 +80,8 @@ class Sprite:
         else:
             comp = svg.SvgData.Composite(f"<g transform=\"{Sprite.matrixToSVG(xform)}\">\n", self.getImportantComponents())
             self.data.data.subcomponents = [comp]
+
+        return self
 
     def compile(self) -> str:
         dx, dy = self.getDimensions()
@@ -104,40 +110,37 @@ def mergeSprites(sprites: list[Sprite]) -> Sprite:
 
     return out
 
-def getShape(dumpdir: str, id: int) -> Sprite:
+def getShape(dumpdir: str, id: int, name: str = "") -> Sprite:
     s = Sprite(svg.parse_svg(os.path.join(dumpdir, "shapes", str(id) + ".svg")))
-    dx, dy = s.getDimensions()
 
     # make everything 0,0 based so it's possible to work with
-    def rebaseShape(s: svg.SvgData.Composite):
-        t = s.getField("transform")
-        if t != "":
-            xform = swf.Matrix()
-            #xform = Sprite.matrixFromSVG(t)
-            #xform.xoffset -= dx / 2.0
-            #xform.yoffset -= dy / 2.0
-            s.setField("transform", Sprite.matrixToSVG(xform))
+    comps = s.getImportantComponents()
+    assert (len(comps) > 0 and comps[0].getTagname() == "g")
+    if (comps[0].getField("transform") != ""):
+        comps[0].setField("transform", "matrix(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)")
 
-    # probably (hopefully) only hits one <g>
-    s.data.data.forEach(rebaseShape)
+    if (comps[0].getField("id") == ""):
+        if name == "":
+            comps[0].setField("id", "DefineShape_" + str(id))
+        else:
+            comps[0].setField("id", name + '_' + str(id))
 
     return s
 
-def getText(dumpdir: str, id: int) -> Sprite:
+def getText(dumpdir: str, id: int, name: str = "") -> Sprite:
     s = Sprite(svg.parse_svg(os.path.join(dumpdir, "texts", str(id) + ".svg")))
-    dx, dy = s.getDimensions()
-
+    
     # make everything 0,0 based so it's possible to work with
-    def rebaseShape(s: svg.SvgData.Composite):
-        t = s.getField("transform")
-        if t != "":
-            xform = Sprite.matrixFromSVG(t)
-            xform.xoffset -= dx / 2.0
-            xform.yoffset -= dy / 2.0
-            s.setField("transform", Sprite.matrixToSVG(xform))
+    comps = s.getImportantComponents()
+    assert (len(comps) > 0 and comps[0].getTagname() == "g")
+    if (comps[0].getField("transform") != ""):
+        comps[0].setField("transform", "matrix(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)")
 
-    # probably (hopefully) only hits one <g>
-    s.data.data.forEach(rebaseShape)
+    if (comps[0].getField("id") == ""):
+        if name == "":
+            comps[0].setField("id", "DefineText_" + str(id))
+        else:
+            comps[0].setField("id", name + '_' + str(id))
 
     return s
 
@@ -149,29 +152,47 @@ def spriteFromPlacedObject(dumpdir: str, swfTree: tree.SWF_Tree, obj: tree.Place
     assert(refNode != None)
 
     s = spriteFromNode(dumpdir, swfTree, refNode)
-
-    if (obj.cxform):
-        s.applyTransform(obj.cxform)
-
-    if (obj.xform):
-        s.applyTransform(obj.xform)
+    s.applyTransform(obj.cxform).applyTransform(obj.xform)
 
     return s
 
 def spriteFromNode(dumpdir: str, swfTree: tree.SWF_Tree, node: tree.SWF_Tree.ShapeNode | tree.SWF_Tree.TextNode | tree.SWF_Tree.SpriteNode, frame: int = 0) -> Sprite:
     if isinstance(node, tree.SWF_Tree.ShapeNode):
-        return getShape(dumpdir, node.id)
+        return getShape(dumpdir, node.id, node.name)
     elif isinstance(node, tree.SWF_Tree.TextNode):
-        return getText(dumpdir, node.id)
+        return getText(dumpdir, node.id, node.name)
 
-    # @TODO handle clipDepth
-
-    sprites = []
     f = node.frames[frame]
     if (len(f.objs) == 0):
         return Sprite(svg.SvgData("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>", svg.SvgData.Composite("<svg width=\"0.0px\" height=\"0.0px\">", [])))
 
+    sprites: list[Sprite] = []
+    clips: list[tuple[int, int, str]] = []
+    for obj in f.objs:
+        if (obj.clipDepth != None):
+            obj.name += '_' + str(obj.id) + str(uuid.uuid4())
+            clips.append((obj.depth, obj.clipDepth, obj.name))
+            sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
+
+            comp = svg.SvgData.Composite(f"<clipPath id=\"{obj.name}\">\n", sprite.getImportantComponents())
+            sprite.data.data.subcomponents = [comp]
+            sprites.append(sprite)
+            
+    clips = sorted(clips, key=lambda dn: dn[0], reverse=True)    
     objs = sorted(f.objs, key=lambda obj: obj.depth)
-    sprites = [spriteFromPlacedObject(dumpdir, swfTree, obj) for obj in objs]
-    return mergeSprites(sprites)
+    for obj in objs:
+        if (obj.clipDepth != None and obj.clipDepth != 0):
+            continue
+
+        sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
+
+        for clipStart, clipEnd, id in clips:
+            if (obj.depth >= clipStart and obj.depth <= clipEnd):
+                comp = svg.SvgData.Composite(f"<g clip-path=\"url(#{id})\">\n", sprite.getImportantComponents())
+                sprite.data.data.subcomponents = [comp]
+        
+        sprites.append(sprite)
+    
+    out = mergeSprites(sprites)
+    return out
         

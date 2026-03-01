@@ -1,6 +1,9 @@
+from ..util import resource_sync as sync
 from ..util import parse_swf as swf
 
 import copy
+import logging
+import threading
 
 class PlacedObject:
         id: int
@@ -58,9 +61,10 @@ class SWF_Tree:
             self.id = id
 
     class TextNode:
+        name: str = ""
         id: int
 
-        def __init__(self, id: int):
+        def __init__(self, id: int, name: str = ""):
             self.id = id
 
     class SpriteNode:
@@ -100,6 +104,9 @@ class SWF_Tree:
                     ro2 = swf.RemoveObject2(tag)
                     displist.remove(ro2.depth)
 
+                elif (tag.type != swf.SWF.FRAME_LABEL or tag.type != 0):
+                    raise RuntimeError("Unhandled tag!")
+
             node.frames.append(copy.deepcopy(displist))
 
         self.characterLUT[sprite.id] = node
@@ -115,7 +122,8 @@ class SWF_Tree:
         if (text.id in self.characterLUT):
             return
         
-        self.characterLUT[text.id] = self.TextNode(text.id)
+        node = self.TextNode(text.id, "" if text.id not in self.isymbTab else self.isymbTab[text.id])
+        self.characterLUT[text.id] = node
 
     def get(self, id: int | str) -> ShapeNode | TextNode | SpriteNode | None:
         if isinstance(id, str):
@@ -134,18 +142,27 @@ def swfToTree(flash: swf.SWF) -> SWF_Tree:
 
     for tag in flash.tags:
         if (tag.type == swf.SWF.DEFINE_SPRITE):
-            dsprite = swf.DefineSprite(tag)
+            out.addSprite(swf.DefineSprite(tag))
 
-            if (dsprite.id == 4437):
-                pass
-
-            out.addSprite(dsprite)
-
-        if (tag.type in swf.SWF.DEFINE_SHAPE_SET):
+        elif (tag.type in swf.SWF.DEFINE_SHAPE_SET):
             out.addShape(swf.DefineShape(tag))
 
-        if (tag.type == swf.SWF.DEFINE_TEXT):
+        elif (tag.type == swf.SWF.DEFINE_TEXT):
             out.addText(swf.DefineText(tag))
 
     return out
 
+
+def swfTreeOnWait(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} waiting on tree parse of {filepath}")
+
+def swfTreeOnWaitEnd(filepath: str):
+    logging.debug(f"thread {threading.get_ident()} done waiting on {filepath} tree")
+
+def swfTreeProduce(filename: str) -> SWF_Tree:
+    return swfToTree(swf.parse_swf(filename))
+
+swfTreeMap = sync.MapSync[SWF_Tree](swfTreeProduce, swfTreeOnWait, swfTreeOnWaitEnd)
+
+def getSwfTree(filename: str) -> SWF_Tree:
+    return swfTreeMap.get(filename, filename)

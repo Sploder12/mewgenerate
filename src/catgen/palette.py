@@ -1,5 +1,7 @@
 import logging
 
+from ..util import resource_sync as sync
+
 from PIL import Image
 logging.getLogger("PIL").setLevel(logging.WARNING)
 
@@ -18,9 +20,9 @@ class Palette:
             return (red, green, blue)
     
         return self.colors[int(red / 16)]
-    
-def loadPalettes(src: str) -> list[Palette]:
-    with Image.open(src) as img:
+
+def palettesProduce(filepath: str):
+    with Image.open(filepath) as img:
         converted = img.convert("RGB")
         pixels = converted.load()
         height = converted.height
@@ -34,6 +36,11 @@ def loadPalettes(src: str) -> list[Palette]:
         palettes.append(Palette(cur))
 
     return palettes
+
+paletteMap = sync.MapSync[list[Palette]](palettesProduce)
+    
+def loadPalettes(src: str) -> list[Palette]:
+    return paletteMap.get(src, src)
 
 def applyPalette(palette: Palette, svgdata: svg.SvgData | svg.SvgData.Composite):
     if isinstance(svgdata, svg.SvgData):
