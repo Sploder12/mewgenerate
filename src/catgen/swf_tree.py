@@ -11,12 +11,15 @@ class PlacedObject:
         clipDepth: int | None
 
         def __init__(self, po2: swf.PlaceObject2):
-            self.id = po2.character
+            self.id = -1 if po2.character == None else po2.character
             self.name = "" if po2.name == None else po2.name
             self.xform = po2.matrix
             self.cxform = po2.cxform
             self.depth = po2.depth
             self.clipDepth = po2.clipdepth
+
+            if (self.id == -1 and not po2.move):
+                raise RuntimeError("Invalid PlaceObject2")
 
 class Frame:
         name: str = ""
@@ -30,7 +33,14 @@ class Frame:
             for i in range(len(self.objs)):
                 o = self.objs[i]
                 if obj.depth == o.depth:
-                    self.objs[i] = obj
+                    if (obj.id == -1):
+                        self.objs[i].name = self.objs[i].name if obj.name == "" else obj.name
+                        self.objs[i].xform = self.objs[i].xform if obj.xform == None else obj.xform
+                        self.objs[i].cxform = self.objs[i].cxform if obj.cxform == None else obj.cxform
+                        self.objs[i].clipDepth = self.objs[i].clipDepth if obj.clipDepth == None else obj.clipDepth
+                    else:
+                        self.objs[i] = obj
+
                     return
 
             self.objs.append(obj)
@@ -47,6 +57,12 @@ class SWF_Tree:
             self.name = name
             self.id = id
 
+    class TextNode:
+        id: int
+
+        def __init__(self, id: int):
+            self.id = id
+
     class SpriteNode:
         name: str = ""
         frames: list[Frame]
@@ -57,7 +73,7 @@ class SWF_Tree:
 
     symbolTable: dict[str, int]
     isymbTab: dict[int, str]
-    characterLUT: dict[int, ShapeNode | SpriteNode]
+    characterLUT: dict[int, ShapeNode | TextNode | SpriteNode]
 
     def __init__(self, symbTab: dict[str, int]):
         self.symbolTable = symbTab
@@ -95,7 +111,13 @@ class SWF_Tree:
         node = self.ShapeNode(shape.id, "" if shape.id not in self.isymbTab else self.isymbTab[shape.id])
         self.characterLUT[shape.id] = node
         
-    def get(self, id: int | str) -> ShapeNode | SpriteNode | None:
+    def addText(self, text: swf.DefineText):
+        if (text.id in self.characterLUT):
+            return
+        
+        self.characterLUT[text.id] = self.TextNode(text.id)
+
+    def get(self, id: int | str) -> ShapeNode | TextNode | SpriteNode | None:
         if isinstance(id, str):
             if id not in self.symbolTable:
                 return None
@@ -121,6 +143,9 @@ def swfToTree(flash: swf.SWF) -> SWF_Tree:
 
         if (tag.type in swf.SWF.DEFINE_SHAPE_SET):
             out.addShape(swf.DefineShape(tag))
+
+        if (tag.type == swf.SWF.DEFINE_TEXT):
+            out.addText(swf.DefineText(tag))
 
     return out
 

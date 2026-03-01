@@ -133,6 +133,8 @@ class SWF:
     DEFINE_SHAPE4 = 83
     DEFINE_SHAPE_SET = {DEFINE_SHAPE, DEFINE_SHAPE2, DEFINE_SHAPE3, DEFINE_SHAPE4}
 
+    DEFINE_TEXT = 11
+
     PLACE_OBJECT2 = 26
     REMOVE_OBJECT2 = 28
     DEFINE_SPRITE = 39
@@ -177,6 +179,8 @@ class SWF:
                     return "RemoveObject"
                 case 9:
                     return "SetBackgroundColor"
+                case SWF.DEFINE_TEXT:
+                    return "DefineText"
                 
                 case SWF.DEFINE_SHAPE2:
                     return "DefineShape2"
@@ -273,10 +277,10 @@ class SWF:
         bits += 6
 
         if hasMult:
-            out.redMult = bitReader.read_signed_bits(nbits) / 65536.0
-            out.greenMult = bitReader.read_signed_bits(nbits) / 65536.0
-            out.blueMult = bitReader.read_signed_bits(nbits) / 65536.0
-            out.alphaMult = bitReader.read_signed_bits(nbits) / 65536.0
+            out.redMult = bitReader.read_signed_bits(nbits) / 256.0
+            out.greenMult = bitReader.read_signed_bits(nbits) / 256.0
+            out.blueMult = bitReader.read_signed_bits(nbits) / 256.0
+            out.alphaMult = bitReader.read_signed_bits(nbits) / 256.0
 
             bits += nbits * 4
 
@@ -379,6 +383,24 @@ class DefineShape:
         offset += o
 
         # Shapes
+
+class DefineText:
+    id: int
+    bounds: Rect
+    matrix: Matrix
+
+    def __init__(self, tag: SWF.Tag):
+        if (tag.type != SWF.DEFINE_TEXT):
+            raise TypeError("tag is not a DefineText tag")
+        
+        self.id = struct.unpack_from("<H", tag.data, 0)[0]
+        offset = 2
+
+        self.bounds, o = SWF.parseRECT(tag.data, offset)
+        offset += o
+
+        self.matrix, o = SWF.parseMATRIX(tag.data, offset)
+        offset += o
         
 class DefineSprite:
     id: int
@@ -411,6 +433,7 @@ class PlaceObject2:
     ratio: int | None
     name: str | None
     clipdepth: int | None
+    move: bool
 
     def __init__(self, tag: SWF.Tag):
         if (tag.type != SWF.PLACE_OBJECT2):
@@ -418,6 +441,8 @@ class PlaceObject2:
         
         flags = struct.unpack_from("<B", tag.data)[0]
         offset = 1
+
+        self.move = (flags & 0b00000001) > 0
 
         self.depth = struct.unpack_from("<H", tag.data, offset)[0]
         offset += 2
@@ -450,6 +475,8 @@ class PlaceObject2:
         self.clipdepth = None
         if flags & 0b01000000 > 0: # HasClipDepth
             self.clipdepth = struct.unpack_from("<H", tag.data, offset)[0]
+            if (self.clipdepth == 0):
+                self.clipdepth = None
             offset += 2
 
         # ignoring clipactions because it scares me. (and is not needed for our uses)
@@ -535,6 +562,10 @@ def getCharacterDict(tags: SWF) -> dict[int, Any]:
         elif (tag.type == SWF.DEFINE_SPRITE):
             dsprite = DefineSprite(tag)
             charDict[dsprite.id] = dsprite
+
+        elif (tag.type == SWF.DEFINE_TEXT):
+            dtext = DefineText(tag)
+            charDict[dtext.id] = dtext
 
     return charDict
 
