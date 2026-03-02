@@ -108,10 +108,16 @@ def getCatHeadShape(dumpdir: str, tree: swf.SWF_Tree, heads: swf.SWF_Tree.Sprite
     assert(isinstance(textureTable, swf.SWF_Tree.SpriteNode))
     textureFrame = textureTable.frames[texture]
 
+    # this works... okay, sure.
+    td1transform = textureTable.frames[0].objs[0].xform
+
     tcomps = []
     for comp in textureFrame.objs:
         if comp.name == "greyhair" or comp.name == "wrinkles":
             continue
+
+        if (comp.depth == 1):
+            comp.xform = td1transform
 
         tcomps.append(comp)
 
@@ -119,7 +125,6 @@ def getCatHeadShape(dumpdir: str, tree: swf.SWF_Tree, heads: swf.SWF_Tree.Sprite
     textureSprite.applyTransform(textureObj.xform).applyTransform(textureObj.cxform)
 
     objs.append(sprite.PlacedSprite(textureSprite, textureObj.id, textureObj.depth, textureObj.clipDepth, textureObj.name))
-
-    return sprite.spriteFromPlacedObjects(dumpdir, tree, objs)
-
+    s = sprite.spriteFromPlacedObjects(dumpdir, tree, objs)
+    return s
 

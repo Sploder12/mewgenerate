@@ -91,7 +91,7 @@ class Sprite:
         rebaseCenter.xoffset += dx / 2.0
         rebaseCenter.yoffset += dy / 2.0
 
-        self.applyTransform(rebaseCenter)
+        #self.applyTransform(rebaseCenter)
         return self.data.compile()
 
 

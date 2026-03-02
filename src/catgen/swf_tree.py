@@ -37,10 +37,10 @@ class Frame:
                 o = self.objs[i]
                 if obj.depth == o.depth:
                     if (obj.id == -1):
-                        self.objs[i].name = self.objs[i].name if obj.name == "" else obj.name
-                        self.objs[i].xform = self.objs[i].xform if obj.xform == None else obj.xform
-                        self.objs[i].cxform = self.objs[i].cxform if obj.cxform == None else obj.cxform
-                        self.objs[i].clipDepth = self.objs[i].clipDepth if obj.clipDepth == None else obj.clipDepth
+                        self.objs[i].name = o.name if obj.name == "" else obj.name
+                        self.objs[i].xform = o.xform if obj.xform == None else obj.xform
+                        self.objs[i].cxform = o.cxform if obj.cxform == None else obj.cxform
+                        self.objs[i].clipDepth = o.clipDepth if obj.clipDepth == None else obj.clipDepth
                     else:
                         self.objs[i] = obj
 

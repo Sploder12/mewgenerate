@@ -40,7 +40,11 @@ def dumpProduce(ffdecPath: str, swfPath: str, outDir: str):
     logging.debug(f"thread {threading.get_ident()} dumping {swfPath}")
     needsExport = True
     if (not FORCE_REDUMP):
-        needsExport = not os.path.exists(os.path.join(outDir, "shapes", "1.svg"))
+        with os.scandir(os.path.join(outDir, "shapes")) as shapes:
+            for shape in shapes:
+                if (shape.name.endswith(".svg")):
+                    needsExport = False
+                    break
 
     if (needsExport):
         logging.debug(f"cache miss {"(forced) " if FORCE_REDUMP else ''}for {swfPath}")

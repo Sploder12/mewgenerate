@@ -130,19 +130,41 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], c
         assembly.append(sprite.PlacedSprite(rear, cat.rightear.frame, placements.head.depth - 1, placements.rear.clipDepth, placements.rear.name))
 
     if (placements.leye != None):
+        adjDepth = placements.leye.depth if placements.mouth == None else placements.mouth.depth + 1
         leye = catpart.getCatComponent(partDir, catTree, catTree.get("CatEye"), cat.lefteye.frame, cat.lefteye.texture)
         leye.applyTransform(placements.leye.xform).applyTransform(placements.leye.cxform)
-        assembly.append(sprite.PlacedSprite(leye, cat.lefteye.frame, placements.leye.depth, placements.leye.clipDepth, placements.leye.name))
+        assembly.append(sprite.PlacedSprite(leye, cat.lefteye.frame, adjDepth, placements.leye.clipDepth, placements.leye.name))
+
+        lbrow = catpart.getCatComponent(partDir, catTree, catTree.get("CatEyebrow"), cat.lefteyebrow.frame, cat.lefteyebrow.texture)
+        lbrow.applyTransform(placements.leye.xform).applyTransform(placements.leye.cxform)
+        xform = swf.swf.Matrix()
+        xform.yoffset = -15.0
+        lbrow.applyTransform(xform)
+        assembly.append(sprite.PlacedSprite(lbrow, cat.lefteyebrow.frame, adjDepth + 1, placements.leye.clipDepth, placements.leye.name + "brow"))
+
+        
 
     if (placements.reye != None):
+        adjDepth = placements.reye.depth if placements.mouth == None else placements.mouth.depth + 3
         reye = catpart.getCatComponent(partDir, catTree, catTree.get("CatEye"), cat.righteye.frame, cat.righteye.texture)
         reye.applyTransform(placements.reye.xform).applyTransform(placements.reye.cxform)
-        assembly.append(sprite.PlacedSprite(reye, cat.righteye.frame, placements.reye.depth, placements.reye.clipDepth, placements.reye.name))
+        assembly.append(sprite.PlacedSprite(reye, cat.righteye.frame, adjDepth, placements.reye.clipDepth, placements.reye.name))
+
+        rbrow = catpart.getCatComponent(partDir, catTree, catTree.get("CatEyebrow"), cat.righteyebrow.frame, cat.righteyebrow.texture)
+        rbrow.applyTransform(placements.reye.xform).applyTransform(placements.reye.cxform)
+        xform = swf.swf.Matrix()
+        xform.yoffset = -15.0
+        rbrow.applyTransform(xform)
+        assembly.append(sprite.PlacedSprite(rbrow, cat.righteyebrow.frame, adjDepth + 1, placements.reye.clipDepth, placements.reye.name + "brow"))
+
 
     if (placements.mouth != None):
         mouth = catpart.getCatComponent(partDir, catTree, catTree.get("CatMouth"), cat.mouth.frame, cat.mouth.texture)
         mouth.applyTransform(placements.mouth.xform).applyTransform(placements.mouth.cxform)
         assembly.append(sprite.PlacedSprite(mouth, cat.mouth.frame, placements.mouth.depth, placements.mouth.clipDepth, placements.mouth.name))
+
+    
+    
 
     # @TODO brows
 
