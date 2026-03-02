@@ -40,13 +40,11 @@ def exportFurniture(svgCropper: svg.SvgCropper, ffdecPath: str, outfolder = "./o
 
         else:
             assert(len(furniture.objs) >= 1)
-
             if (len(furniture.objs) > 1):
                 logging.info(f"{furniture.name} has {len(furniture.objs)} objs")
 
             basics = []
             rares = []
-
             for obj in furniture.objs:
                 variations = spriteTree.get(obj.id)
                 assert(isinstance(variations, swf.SWF_Tree.SpriteNode) and len(variations.frames) == 2)

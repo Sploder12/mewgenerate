@@ -134,6 +134,7 @@ class SWF:
     DEFINE_SHAPE_SET = {DEFINE_SHAPE, DEFINE_SHAPE2, DEFINE_SHAPE3, DEFINE_SHAPE4}
 
     DEFINE_TEXT = 11
+    DEFINE_EDIT_TEXT = 37
 
     PLACE_OBJECT2 = 26
     REMOVE_OBJECT2 = 28
@@ -181,6 +182,8 @@ class SWF:
                     return "SetBackgroundColor"
                 case SWF.DEFINE_TEXT:
                     return "DefineText"
+                case SWF.DEFINE_EDIT_TEXT:
+                    return "DefineEditText"
                 
                 case SWF.DEFINE_SHAPE2:
                     return "DefineShape2"
@@ -208,7 +211,7 @@ class SWF:
                 case SWF.DEFINE_SHAPE4:
                     return "DefineShape4"
             
-            return "Unknown"
+            return f"Unknown ({self.type})"
 
     @staticmethod
     def parseRECT(buffer: bytes, offset: int) -> tuple[Rect, int]:
@@ -298,7 +301,7 @@ class SWF:
     def parseSTRING(buffer: bytes, offset: int) -> tuple[str, int]:
         i = 0
         while i + offset < len(buffer):
-            if (buffer[i] == 0):
+            if (buffer[i + offset] == 0):
                 return (buffer[offset: offset + i].decode("utf-8"), i + 1)
 
             i += 1 
@@ -387,10 +390,10 @@ class DefineShape:
 class DefineText:
     id: int
     bounds: Rect
-    matrix: Matrix
+    #matrix: Matrix
 
     def __init__(self, tag: SWF.Tag):
-        if (tag.type != SWF.DEFINE_TEXT):
+        if (tag.type != SWF.DEFINE_TEXT and tag.type != SWF.DEFINE_EDIT_TEXT):
             raise TypeError("tag is not a DefineText tag")
         
         self.id = struct.unpack_from("<H", tag.data, 0)[0]
@@ -399,8 +402,8 @@ class DefineText:
         self.bounds, o = SWF.parseRECT(tag.data, offset)
         offset += o
 
-        self.matrix, o = SWF.parseMATRIX(tag.data, offset)
-        offset += o
+        #self.matrix, o = SWF.parseMATRIX(tag.data, offset)
+        #offset += o
         
 class DefineSprite:
     id: int
@@ -563,7 +566,7 @@ def getCharacterDict(tags: SWF) -> dict[int, Any]:
             dsprite = DefineSprite(tag)
             charDict[dsprite.id] = dsprite
 
-        elif (tag.type == SWF.DEFINE_TEXT):
+        elif (tag.type == SWF.DEFINE_TEXT or tag.type == SWF.DEFINE_EDIT_TEXT):
             dtext = DefineText(tag)
             charDict[dtext.id] = dtext
 

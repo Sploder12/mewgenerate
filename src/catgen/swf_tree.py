@@ -147,7 +147,7 @@ def swfToTree(flash: swf.SWF) -> SWF_Tree:
         elif (tag.type in swf.SWF.DEFINE_SHAPE_SET):
             out.addShape(swf.DefineShape(tag))
 
-        elif (tag.type == swf.SWF.DEFINE_TEXT):
+        elif (tag.type == swf.SWF.DEFINE_TEXT or tag.type == swf.SWF.DEFINE_EDIT_TEXT):
             out.addText(swf.DefineText(tag))
 
     return out
