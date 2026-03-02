@@ -30,13 +30,13 @@ def timedExport(name: str, exportFnc, inkscape: str, ffdec: str, outdir: str):
             try:
                 result = exportFnc(svgCropper, ffdec, outdir)
                 delta = datetime.now() - start
-                logging.info(f"Exported {result} {name} in {delta.seconds} seconds")
+                logging.info(f"Exported {result} {name} in {delta.seconds + int(delta.microseconds / 1000) / 1000} seconds")
             except Exception as e:
                 logging.error(f"Failed to export {name}: {e}")
         else:
             result = exportFnc(svgCropper, ffdec, outdir)
             delta = datetime.now() - start
-            logging.info(f"Exported {result} {name} in {delta.seconds} seconds")
+            logging.info(f"Exported {result} {name} in {delta.seconds + int(delta.microseconds / 1000) / 1000} seconds")
 
 
 def exportItems(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
@@ -120,7 +120,7 @@ def main():
         t.join()
 
     delta = datetime.now() - start
-    logging.info(f"Finished exporting in {delta.seconds} seconds")
+    logging.info(f"Finished exporting in {delta.seconds + int(delta.microseconds / 1000) / 1000} seconds")
 
 # ICONS_SWF = "./data/swfs/portraits.swf"
 
