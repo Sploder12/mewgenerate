@@ -5,6 +5,8 @@ from . import swf_tree as tree
 import os
 import uuid
 
+from typing import Sequence
+
 class Sprite:
     @staticmethod
     def matrixToSVG(matrix: swf.Matrix) -> str:
@@ -103,6 +105,10 @@ def mergeSprites(sprites: list[Sprite]) -> Sprite:
         mhig = max(dims[1], mhig)
 
     svgTag = f"<svg width=\"{mwid}px\" height=\"{mhig}px\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:ffdec=\"https://www.free-decompiler.com/flash\">"
+    
+    if len(sprites) == 0:
+        return Sprite(svg.SvgData("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>", svg.SvgData.Composite(svgTag, [])))
+
     out = Sprite(svg.SvgData(sprites[0].data.xmlVersion, svg.SvgData.Composite(svgTag, [])))
 
     for sprite in sprites:
@@ -166,33 +172,60 @@ def spriteFromNode(dumpdir: str, swfTree: tree.SWF_Tree, node: tree.SWF_Tree.Sha
     if (len(f.objs) == 0):
         return Sprite(svg.SvgData("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>", svg.SvgData.Composite("<svg width=\"0.0px\" height=\"0.0px\">", [])))
 
+    return spriteFromPlacedObjects(dumpdir, swfTree, f.objs)
+
+class PlacedSprite:
+    sprite: Sprite
+    id: int
+    name: str
+    depth: int
+    clipDepth: int | None
+
+    def __init__(self, sprite: Sprite, id: int, depth: int, clipDepth: int | None = None, name: str = ""):
+        self.sprite = sprite
+        self.id = id
+        self.name = name
+        self.depth = depth
+        self.clipDepth = clipDepth
+        
+
+def spriteFromPlacedObjects(dumpdir: str, swfTree: tree.SWF_Tree, objs: Sequence[tree.PlacedObject | PlacedSprite]) -> Sprite:
     sprites: list[Sprite] = []
     clips: list[tuple[int, int, str]] = []
-    for obj in f.objs:
+    for obj in objs:
         if (obj.clipDepth != None):
             obj.name += '_' + str(obj.id) + str(uuid.uuid4())
             clips.append((obj.depth, obj.clipDepth, obj.name))
-            sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
+
+            if (isinstance(obj, PlacedSprite)):
+                sprite = obj.sprite
+            else:
+                sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
 
             comp = svg.SvgData.Composite(f"<clipPath id=\"{obj.name}\">\n", sprite.getImportantComponents())
+            comp.removeRedundantGs(True)
+            
             sprite.data.data.subcomponents = [comp]
             sprites.append(sprite)
             
     clips = sorted(clips, key=lambda dn: dn[0], reverse=True)    
-    objs = sorted(f.objs, key=lambda obj: obj.depth)
+    objs = sorted(objs, key=lambda obj: obj.depth)
     for obj in objs:
         if (obj.clipDepth != None and obj.clipDepth != 0):
             continue
 
-        sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
+        if (isinstance(obj, PlacedSprite)):
+            sprite = obj.sprite
+        else:
+            sprite = spriteFromPlacedObject(dumpdir, swfTree, obj)
 
         for clipStart, clipEnd, id in clips:
             if (obj.depth >= clipStart and obj.depth <= clipEnd):
                 comp = svg.SvgData.Composite(f"<g clip-path=\"url(#{id})\">\n", sprite.getImportantComponents())
                 sprite.data.data.subcomponents = [comp]
         
+        sprite.data.data.removeRedundantGs()
         sprites.append(sprite)
     
-    out = mergeSprites(sprites)
-    return out
+    return mergeSprites(sprites)
         

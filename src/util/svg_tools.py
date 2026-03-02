@@ -212,6 +212,28 @@ class SvgData:
                 out += f"</{self.getTagname()}>\n"
 
             return out
+
+        def removeRedundantGs(self, aggressive: bool = False):
+            remain = []
+            IDENTITY_MATRIX = "matrix(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)"
+            for sub in self.subcomponents:
+                if (sub.header == "<g/>" or sub.header == f"<g transform=\"{IDENTITY_MATRIX}\">"):
+                    sub.removeRedundantGs(aggressive)
+                    if (len(sub.subcomponents) > 0):
+                        remain += sub.subcomponents
+
+                    continue
+
+                if (aggressive):
+                    if (sub.getTagname() == "g" and (sub.getTransform() == "" or sub.getTransform() == IDENTITY_MATRIX)):
+                        sub.removeRedundantGs(aggressive)
+                        if (len(sub.subcomponents) > 0):
+                            remain += sub.subcomponents
+                        continue
+ 
+                remain.append(sub)
+
+            self.subcomponents = remain
         
         def forEach(self, fn: Callable[[Self], Any]):
             fn(self)

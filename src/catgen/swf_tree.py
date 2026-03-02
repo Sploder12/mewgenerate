@@ -105,7 +105,8 @@ class SWF_Tree:
                     displist.remove(ro2.depth)
 
                 elif (tag.type != swf.SWF.FRAME_LABEL or tag.type != 0):
-                    raise RuntimeError("Unhandled tag!")
+                    logging.warning(f"Unhandled tag! {tag.type_to_string()}")
+                    #raise RuntimeError("Unhandled tag!")
 
             node.frames.append(copy.deepcopy(displist))
 

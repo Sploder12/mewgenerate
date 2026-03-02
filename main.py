@@ -47,7 +47,6 @@ def exportFurniture(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
     return furniture.exportFurniture(svgCropper, ffdec, outdir)
 
 def exportCustomCats(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
-    return 0
     return custom_cats.exportCustomCats(svgCropper, ffdec, custom_cats.getCustomCats(), outdir)
 
 def exportActives(svgCropper: svg.SvgCropper, ffdec: str, outdir: str):
