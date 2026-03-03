@@ -204,6 +204,11 @@ def spriteFromPlacedObjects(dumpdir: str, swfTree: tree.SWF_Tree, objs: Sequence
 
             comp = svg.SvgData.Composite(f"<clipPath id=\"{obj.name}\">\n", sprite.getImportantComponents())
             comp.removeRedundantGs(True)
+
+            ic = sprite.getImportantComponents()
+            if (len(ic) == 1 and ic[0].getTagname() == "g"):
+                comp.setField("transform", ic[0].getField("transform"))
+                comp.subcomponents = ic[0].subcomponents
             
             sprite.data.data.subcomponents = [comp]
             sprites.append(sprite)

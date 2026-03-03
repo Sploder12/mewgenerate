@@ -26,16 +26,16 @@ class CustomCat:
 
         def __init__(self, defaultTex: int, defaultFrame: int, data = None):
             if (data == None):
-                self.texture = None
+                self.texture = defaultTex
                 self.frame = defaultFrame - 1
                 return
 
             if (isinstance(data, str) or isinstance(data, int)):
                 self.frame = int(data) - 1
-                self.texture = None
+                self.texture = defaultTex
             else:
                 self.frame = int(data.setdefault("frame", defaultFrame)) - 1
-                self.texture = data.setdefault("texture", None)
+                self.texture = data.setdefault("texture", defaultTex)
 
     id: str
 
@@ -120,12 +120,12 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], c
     ]
     
     if (placements.lear != None):
-        lear = catpart.getCatComponent(partDir, catTree, catTree.get("CatEar"), cat.leftear.frame, cat.leftear.texture)
+        lear = catpart.getCatComponent(partDir, catTree, catTree.get("CatEar"), cat.leftear.frame, cat.texture)
         lear.applyTransform(placements.lear.xform).applyTransform(placements.lear.cxform)
         assembly.append(sprite.PlacedSprite(lear, cat.leftear.frame, placements.head.depth - 2, placements.lear.clipDepth, placements.lear.name))
 
     if (placements.rear != None):
-        rear = catpart.getCatComponent(partDir, catTree, catTree.get("CatEar"), cat.rightear.frame, cat.rightear.texture)
+        rear = catpart.getCatComponent(partDir, catTree, catTree.get("CatEar"), cat.rightear.frame, cat.texture)
         rear.applyTransform(placements.rear.xform).applyTransform(placements.rear.cxform)
         assembly.append(sprite.PlacedSprite(rear, cat.rightear.frame, placements.head.depth - 1, placements.rear.clipDepth, placements.rear.name))
 
