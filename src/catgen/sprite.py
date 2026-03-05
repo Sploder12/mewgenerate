@@ -14,6 +14,9 @@ class Sprite:
     
     @staticmethod
     def matrixFromSVG(matrix: str) -> swf.Matrix:
+        if (matrix == ""):
+            return swf.Matrix()
+
         components = matrix.removeprefix("matrix(").removesuffix(')').split(',')
 
         out = swf.Matrix()

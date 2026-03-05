@@ -62,7 +62,7 @@ def applyPalette(palette: Palette, svgdata: svg.SvgData | svg.SvgData.Composite)
 
         color = palette.get(red, green, blue)
 
-        svgdata.header = svgdata.header[:f] + f"{color[0]:x}{color[1]:x}{color[2]:x}" + svgdata.header[fe:]
+        svgdata.header = svgdata.header[:f] + f"{color[0]:02x}{color[1]:02x}{color[2]:02x}" + svgdata.header[fe:]
 
     elif "stop-color=\"#" in svgdata.header:
         f = svgdata.header.find("stop-color=\"#") + 13

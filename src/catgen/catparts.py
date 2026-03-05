@@ -87,7 +87,7 @@ def getCatComponent(dumpdir: str, tree: swf.SWF_Tree, components: swf.SWF_Tree.S
 
     return sprite.spriteFromPlacedObjects(dumpdir, tree, objs)
 
-def getCatHeadShape(dumpdir: str, tree: swf.SWF_Tree, heads: swf.SWF_Tree.SpriteNode, id: int, texture: int) -> sprite.Sprite:
+def getCatHeadShape(dumpdir: str, tree: swf.SWF_Tree, heads: swf.SWF_Tree.SpriteNode, id: int, texture: int, offset: tuple[float, float] | None = None) -> sprite.Sprite:
     # @TODO scars
     # @TODO figure out wrinkles + old hair
     frame = heads.frames[id]
@@ -123,6 +123,11 @@ def getCatHeadShape(dumpdir: str, tree: swf.SWF_Tree, heads: swf.SWF_Tree.Sprite
 
     textureSprite = sprite.spriteFromPlacedObjects(dumpdir, tree, tcomps)
     textureSprite.applyTransform(textureObj.xform).applyTransform(textureObj.cxform)
+    if (offset):
+        of = swf.swf.Matrix()
+        of.xoffset = offset[0]
+        of.yoffset = offset[1]
+        textureSprite.applyTransform(of)
 
     objs.append(sprite.PlacedSprite(textureSprite, textureObj.id, textureObj.depth, textureObj.clipDepth, textureObj.name))
     s = sprite.spriteFromPlacedObjects(dumpdir, tree, objs)

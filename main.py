@@ -6,6 +6,7 @@ import src.custom_cats as custom_cats
 import src.util.ffdec_tools as ffdec
 import src.status as status
 import src.events as events
+import src.mutations as mutations
 
 import src.util.svg_tools as svg
 
@@ -20,6 +21,8 @@ DEBUG = True
 ffdecDefault = "C:/Program Files (x86)/FFDec/ffdec-cli.exe" if os.name == "nt" else "ffdec-cli"
 inkscapeDefault = "C:/Program Files/Inkscape/bin/inkscape.com" if os.name == "nt" else "inkscape"
 outDirDefault = "./out"
+
+#mutations.exportMutations(None, ffdecDefault, "./out")
 
 def timedExport(name: str, exportFnc, inkscape: str, ffdec: str, outdir: str):
     start = datetime.now()

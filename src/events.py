@@ -107,6 +107,8 @@ def exportEvents(events: dict[str, Event], outfolder = "./out"):
 
     areaEvents = {}
 
+    tnames = {}
+
     for id, event in events.items():
         out = []
         def follow(id: str, event: Event, events: dict[str, Event]) -> list[str]:
@@ -115,6 +117,7 @@ def exportEvents(events: dict[str, Event], outfolder = "./out"):
                 return []
             
             out.append(id)
+            tnames[id] = "(No title)" if "intro" not in event.data else event.data["intro"]["title"]
             adj = event.getNextEvents()
             for other in adj:
                 if (other == "random"):
@@ -152,7 +155,7 @@ def exportEvents(events: dict[str, Event], outfolder = "./out"):
 
         "The Lab",
         "The Ice Age",
-        "The Future"
+        "The Future",
         "The Jurassic",
         "The End",
         "The Infinite"
@@ -164,7 +167,16 @@ def exportEvents(events: dict[str, Event], outfolder = "./out"):
             eventz = areaEvents.setdefault(area, [])
             for ev in eventz:
                 battles = list(dict.fromkeys(events.get(ev).getBattles()))
-                summary.write(f"{ev}")
+
+                if (tnames[ev] == "(No title)"):
+                    name = f"{ev} (No title)"
+                else:
+                    try:
+                        name = translations.get(tnames[ev])
+                    except:
+                        name = f"{tnames[ev]} (No Translation?)"
+
+                summary.write(f"{name}")
 
                 enemies = []
                 if (len(battles) > 0):
