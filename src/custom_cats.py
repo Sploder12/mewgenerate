@@ -211,10 +211,10 @@ def makeCatHead(cat: CustomCat, partDir: str, palettes: list[palette.Palette], c
         allParts += [face.leye_open, face.leye_closed, face.lbrow]
 
     if (placements.reye != None):
-        face.reye_open = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatEye"), cat.righteye.frame, cat.righteye.texture))
+        face.reye_open = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatEye_Right"), cat.righteye.frame, cat.righteye.texture))
         face.reye_open.applyTransform(placements.reye.xform).applyTransform(placements.reye.cxform)
 
-        face.reye_closed = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatEyeClosed"), cat.righteye.frame, cat.righteye.texture))
+        face.reye_closed = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatEyeClosed_Right"), cat.righteye.frame, cat.righteye.texture))
         face.reye_closed.applyTransform(placements.reye.xform).applyTransform(placements.reye.cxform)
 
         face.rbrow = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatEyebrow"), cat.righteyebrow.frame, cat.righteyebrow.texture))
@@ -303,7 +303,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.leye_closed.data.data.getTransform())
         if (pose.offset[0] < 0):
             tf.xscale *= -1.0
-            face.leye_closed.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.leye_closed.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.leye_closed.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.leye_closed, 0, HEAD_DEPTH + forward * 2, None, "Left Eye"))
@@ -311,7 +311,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.leye_open.data.data.getTransform())
         if (pose.offset[0] < 0):
             tf.xscale *= -1.0
-            face.leye_open.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.leye_open.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.leye_open.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.leye_open, 0, HEAD_DEPTH + forward * 2, None, "Left Eye"))
@@ -322,15 +322,15 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.reye_closed.data.data.getTransform())
         if (pose.offset[0] > 0):
             tf.xscale *= -1.0
-            face.reye_closed.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.reye_closed.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.reye_closed.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.reye_closed, 0, HEAD_DEPTH + forward * 3, None, "Right Eye"))
     elif (pose.eyes[1] == "open" and face.reye_open != None):
-        tf = sprite.Sprite.matrixFromSVG(face.reye_open.data.data.getTransform())
+        tf = sprite.Sprite.matrixFromSVG(face.reye_open.data.data.subcomponents[0].getTransform())
         if (pose.offset[0] > 0):
             tf.xscale *= -1.0
-            face.reye_open.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.reye_open.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.reye_open.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.reye_open, 0, HEAD_DEPTH + forward * 3, None, "Right Eye"))
@@ -342,7 +342,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.mouth_closed.data.data.getTransform())
         if (pose.offset[0] < 0):
             tf.xscale *= -1.0
-            face.mouth_closed.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.mouth_closed.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.mouth_closed.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.mouth_closed, 0, HEAD_DEPTH + forward * 1, None, "Mouth"))
@@ -350,7 +350,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.mouth_open.data.data.getTransform())
         if (pose.offset[0] < 0):
             tf.xscale *= -1.0
-            face.mouth_open.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.mouth_open.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.mouth_open.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.mouth_open, 0, HEAD_DEPTH + forward * 1, None, "Mouth"))
@@ -358,7 +358,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
         tf = sprite.Sprite.matrixFromSVG(face.mouth_smile.data.data.getTransform())
         if (pose.offset[0] < 0):
             tf.xscale *= -1.0
-            face.mouth_smile.data.data.setTransform(sprite.Sprite.matrixToSVG(tf))
+            face.mouth_smile.data.data.subcomponents[0].setTransform(sprite.Sprite.matrixToSVG(tf))
 
         face.mouth_smile.applyTransform(onlyoffset)
         assembly.append(sprite.PlacedSprite(face.mouth_smile, 0, HEAD_DEPTH + forward * 1, None, "Mouth"))
@@ -381,18 +381,71 @@ def getCustomCats() -> list[CustomCat]:
 
 def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], catTree: swf.SWF_Tree) -> sprite.Sprite:
 
+    xform = swf.swf.Matrix()
+
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
     outhead = headWithPose(cat, partDir, catTree, headx, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
+
+    xform.xoffset = 20
+    xform.yoffset = -25
+    outhead.applyTransform(xform)
     
-    assembly = [
-        sprite.PlacedSprite(outhead, 0, 1, None, "Whole Head")
-    ]
+    
 
     # @TODO items
 
+    
+    colors = palettes[cat.palette]
+    body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
+    palette.applyPalette(colors, body.data)
+
+    # left/right arms and legs are flipped @TODO fix that :)
+    arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
+    xform.xoffset = 27
+    xform.yoffset = 25
+    arm1.applyTransform(xform)
+    palette.applyPalette(colors, arm1.data)
+
+    arm2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm2.frame, cat.arm2.texture))
+    xform.xoffset = -5
+    xform.yoffset = 35
+    arm2.applyTransform(xform)
+    palette.applyPalette(colors, arm2.data)
+
+    leg1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg1.frame, cat.leg1.texture))
+    xform.xoffset = -15
+    xform.yoffset = 13
+    leg1.applyTransform(xform)
+    palette.applyPalette(colors, leg1.data)
+
+
+    leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
+    xform.xoffset = -50
+    xform.yoffset = 20
+    leg2.applyTransform(xform)
+    palette.applyPalette(colors, leg2.data)
+
+    tail = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatTail"), cat.tail.frame, cat.tail.texture))
+    xform.xoffset = -35
+    xform.yoffset = -7
+    tail.applyTransform(xform)
+    palette.applyPalette(colors, tail.data)
+
+
     # @TODO body, animations, etc...
+
+
+    assembly = [
+        sprite.PlacedSprite(outhead, 0, 1, None, "Whole Head"),
+        sprite.PlacedSprite(body, 0, 0, None, "Body"),
+        sprite.PlacedSprite(arm1, 0, -2, None, "Left Arm"),
+        sprite.PlacedSprite(arm2, 0, 2, None, "Right Arm"),
+        sprite.PlacedSprite(leg1, 0, -3, None, "Left Leg"),
+        sprite.PlacedSprite(leg2, 0, 3, None, "Right Leg"),
+        sprite.PlacedSprite(tail, 0, -4, None, "Tail")
+    ]
 
     out = sprite.spriteFromPlacedObjects(partDir, catTree, assembly)
   

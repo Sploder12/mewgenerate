@@ -72,12 +72,17 @@ def getCatComponent(dumpdir: str, tree: swf.SWF_Tree, components: swf.SWF_Tree.S
         if (obj.name == "tex"):
             assert(textureObj == None)
             textureObj = obj
+        elif (obj.name == "aux"):
+            continue
         else:
             objs.append(obj)
 
     if textureObj != None:
         textureTable = tree.get(textureObj.id)
         assert(isinstance(textureTable, swf.SWF_Tree.SpriteNode))
+
+        #td1transform = textureTable.frames[0].objs[0].xform
+        #textureObj.xform = td1transform
 
         textureFrame = textureTable.frames[id if texOverride == None else texOverride]
         textureSprite = sprite.spriteFromPlacedObjects(dumpdir, tree, textureFrame.objs)
