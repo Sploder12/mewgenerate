@@ -380,65 +380,63 @@ def getCustomCats() -> list[CustomCat]:
 
     return out
 
-def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], anims: dict[str, list[animations.CatFrame]], catTree: swf.SWF_Tree) -> sprite.Sprite:
+def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], anim: list[animations.CatFrame], catTree: swf.SWF_Tree) -> list[sprite.Sprite]:
 
-    anim = anims["idleF"][0]
+    out = []
 
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
     outhead = headWithPose(cat, partDir, catTree, headx, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
 
-    outhead.applyTransform(anim.head)
-    
-    
+    for frame in anim:
+        head = copy.deepcopy(outhead)
+        head.applyTransform(frame.head)
 
-    # @TODO items
+        # @TODO items
 
+        colors = palettes[cat.palette]
+        body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
+        body.applyTransform(frame.body)
+        palette.applyPalette(colors, body.data)
 
-    
-    colors = palettes[cat.palette]
-    body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
-    body.applyTransform(anim.body)
-    palette.applyPalette(colors, body.data)
+        # left/right arms and legs are flipped @TODO fix that :)
+        arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
+        arm1.applyTransform(frame.arm1)
+        palette.applyPalette(colors, arm1.data)
 
-    # left/right arms and legs are flipped @TODO fix that :)
-    arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
-    arm1.applyTransform(anim.arm1)
-    palette.applyPalette(colors, arm1.data)
+        arm2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm2.frame, cat.arm2.texture))
+        arm2.applyTransform(frame.arm2)
+        palette.applyPalette(colors, arm2.data)
 
-    arm2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm2.frame, cat.arm2.texture))
-    arm2.applyTransform(anim.arm2)
-    palette.applyPalette(colors, arm2.data)
-
-    leg1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg1.frame, cat.leg1.texture))
-    leg1.applyTransform(anim.leg1)
-    palette.applyPalette(colors, leg1.data)
+        leg1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg1.frame, cat.leg1.texture))
+        leg1.applyTransform(frame.leg1)
+        palette.applyPalette(colors, leg1.data)
 
 
-    leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
-    leg2.applyTransform(anim.leg2)
-    palette.applyPalette(colors, leg2.data)
+        leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
+        leg2.applyTransform(frame.leg2)
+        palette.applyPalette(colors, leg2.data)
 
-    tail = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatTail"), cat.tail.frame, cat.tail.texture))
-    tail.applyTransform(anim.tail)
-    palette.applyPalette(colors, tail.data)
-
-
-    # @TODO body, animations, etc...
+        tail = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatTail"), cat.tail.frame, cat.tail.texture))
+        tail.applyTransform(frame.tail)
+        palette.applyPalette(colors, tail.data)
 
 
-    assembly = [
-        sprite.PlacedSprite(outhead, 0, 5, None, "Whole Head"),
-        sprite.PlacedSprite(body, 0, 0, None, "Body"),
-        sprite.PlacedSprite(arm1, 0, 2, None, "Right Arm"),
-        sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
-        sprite.PlacedSprite(leg1, 0, 3, None, "Right Leg"),
-        sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
-        sprite.PlacedSprite(tail, 0, -4, None, "Tail")
-    ]
+        # @TODO body, animations, etc...
 
-    out = sprite.spriteFromPlacedObjects(partDir, catTree, assembly)
+
+        assembly = [
+            sprite.PlacedSprite(head, 0, 5, None, "Whole Head"),
+            sprite.PlacedSprite(body, 0, 0, None, "Body"),
+            sprite.PlacedSprite(arm1, 0, 2, None, "Right Arm"),
+            sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
+            sprite.PlacedSprite(leg1, 0, 3, None, "Right Leg"),
+            sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
+            sprite.PlacedSprite(tail, 0, -4, None, "Tail")
+        ]
+
+        out.append(sprite.spriteFromPlacedObjects(partDir, catTree, assembly))
   
     return out
    
@@ -456,12 +454,17 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
 
     count = 0
     for cat in cats:
-        s = assembleCat(cat, partDir, palettes, anims, catpartTree)
-        outfile = f"{outdir}/{cat.id}.svg"
-        with open(outfile, "w") as ocat:
-            ocat.write(s.compile())
+        frames = assembleCat(cat, partDir, palettes, anims["idleF"], catpartTree)
+        outfolder = f"{outdir}/{cat.id}"
+        os.makedirs(outfolder, exist_ok=True)
 
-        svgCropper.crop(outfile, outfile)
+        for i in range(len(frames)):
+            outfile = f"{outfolder}/{i}.svg"
+            with open(outfile, "w") as ocat:
+                ocat.write(frames[i].compile())
+
+            svgCropper.crop(outfile, outfile)
+
         count += 1
 
     return count
