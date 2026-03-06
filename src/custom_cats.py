@@ -3,6 +3,7 @@
 from .catgen import catparts as catpart
 from .catgen import swf_tree as swf
 from .catgen import sprite
+from .catgen import animations
 
 from .util import parse_gon as gon
 from .util import ffdec_tools as ffdec
@@ -379,58 +380,48 @@ def getCustomCats() -> list[CustomCat]:
 
     return out
 
-def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], catTree: swf.SWF_Tree) -> sprite.Sprite:
+def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], anims: dict[str, list[animations.CatFrame]], catTree: swf.SWF_Tree) -> sprite.Sprite:
 
-    xform = swf.swf.Matrix()
+    anim = anims["idleF"][0]
 
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
     outhead = headWithPose(cat, partDir, catTree, headx, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
 
-    xform.xoffset = 20
-    xform.yoffset = -25
-    outhead.applyTransform(xform)
+    outhead.applyTransform(anim.head)
     
     
 
     # @TODO items
 
+
     
     colors = palettes[cat.palette]
     body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
+    body.applyTransform(anim.body)
     palette.applyPalette(colors, body.data)
 
     # left/right arms and legs are flipped @TODO fix that :)
     arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
-    xform.xoffset = 27
-    xform.yoffset = 25
-    arm1.applyTransform(xform)
+    arm1.applyTransform(anim.arm1)
     palette.applyPalette(colors, arm1.data)
 
     arm2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm2.frame, cat.arm2.texture))
-    xform.xoffset = -5
-    xform.yoffset = 35
-    arm2.applyTransform(xform)
+    arm2.applyTransform(anim.arm2)
     palette.applyPalette(colors, arm2.data)
 
     leg1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg1.frame, cat.leg1.texture))
-    xform.xoffset = -15
-    xform.yoffset = 13
-    leg1.applyTransform(xform)
+    leg1.applyTransform(anim.leg1)
     palette.applyPalette(colors, leg1.data)
 
 
     leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
-    xform.xoffset = -50
-    xform.yoffset = 20
-    leg2.applyTransform(xform)
+    leg2.applyTransform(anim.leg2)
     palette.applyPalette(colors, leg2.data)
 
     tail = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatTail"), cat.tail.frame, cat.tail.texture))
-    xform.xoffset = -35
-    xform.yoffset = -7
-    tail.applyTransform(xform)
+    tail.applyTransform(anim.tail)
     palette.applyPalette(colors, tail.data)
 
 
@@ -438,12 +429,12 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], c
 
 
     assembly = [
-        sprite.PlacedSprite(outhead, 0, 1, None, "Whole Head"),
+        sprite.PlacedSprite(outhead, 0, 5, None, "Whole Head"),
         sprite.PlacedSprite(body, 0, 0, None, "Body"),
-        sprite.PlacedSprite(arm1, 0, -2, None, "Left Arm"),
-        sprite.PlacedSprite(arm2, 0, 2, None, "Right Arm"),
-        sprite.PlacedSprite(leg1, 0, -3, None, "Left Leg"),
-        sprite.PlacedSprite(leg2, 0, 3, None, "Right Leg"),
+        sprite.PlacedSprite(arm1, 0, 2, None, "Right Arm"),
+        sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
+        sprite.PlacedSprite(leg1, 0, 3, None, "Right Leg"),
+        sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
         sprite.PlacedSprite(tail, 0, -4, None, "Tail")
     ]
 
@@ -461,9 +452,11 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
         shutil.rmtree(outdir)
     os.makedirs(outdir, exist_ok=True)
 
+    anims = animations.getCatAnims()
+
     count = 0
     for cat in cats:
-        s = assembleCat(cat, partDir, palettes, catpartTree)
+        s = assembleCat(cat, partDir, palettes, anims, catpartTree)
         outfile = f"{outdir}/{cat.id}.svg"
         with open(outfile, "w") as ocat:
             ocat.write(s.compile())
