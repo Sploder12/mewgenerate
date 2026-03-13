@@ -12,8 +12,10 @@ class PlacedObject:
         cxform: swf.CXFORM | None
         depth: int
         clipDepth: int | None
+        move: bool
 
         def __init__(self, po2: swf.PlaceObject2):
+            self.move = po2.move
             self.id = -1 if po2.character == None else po2.character
             self.name = "" if po2.name == None else po2.name
             self.xform = po2.matrix
@@ -36,13 +38,15 @@ class Frame:
             for i in range(len(self.objs)):
                 o = self.objs[i]
                 if obj.depth == o.depth:
-                    if (obj.id == -1):
+                    if (obj.move or obj.id != -1):
+                        self.objs[i] = obj
+
+                    if (obj.id == -1 or obj.move):
+                        self.objs[i].id = o.id if obj.id == -1 else obj.id
                         self.objs[i].name = o.name if obj.name == "" else obj.name
                         self.objs[i].xform = o.xform if obj.xform == None else obj.xform
                         self.objs[i].cxform = o.cxform if obj.cxform == None else obj.cxform
                         self.objs[i].clipDepth = o.clipDepth if obj.clipDepth == None else obj.clipDepth
-                    else:
-                        self.objs[i] = obj
 
                     return
 
