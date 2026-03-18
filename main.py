@@ -93,7 +93,8 @@ def main():
     parser.add_argument("--inkscape", nargs=1, default=inkscapeDefault, help="Path to inkscape executable, used for cropping SVG assets. (default: %(default)s)")
     parser.add_argument("--force-redump", action="store_true", help="Ignores asset cache.")
     
-    parser.add_argument("components", nargs="*", default=[], help=f"Components to export, blank for all. Valid values are \"{"\", \"".join(VALID_VALUES.keys())}\"")
+    validKeys = '", "'.join(VALID_VALUES.keys())
+    parser.add_argument("components", nargs="*", default=[], help=f'Components to export, blank for all. Valid values are "{validKeys}"')
 
     args = parser.parse_args()
 
