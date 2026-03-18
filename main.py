@@ -105,7 +105,7 @@ def main():
 
     all = len(args.components) == 0
 
-    logging.debug(f"components={"all" if all else args.components}")
+    logging.debug(f'components={"all" if all else args.components}')
 
     threads: list[threading.Thread] = []
     start = datetime.now()
