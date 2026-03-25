@@ -6,29 +6,29 @@ CATANIS_SWF1 = "./data/swfs/catanis.swf"
 CATANIS_SWF2 = "./data/swfs/catanis2.swf"
 
 class CatFrame:
-    head: tree.swf.Matrix
-    body: tree.swf.Matrix
-    arm1: tree.swf.Matrix
-    arm2: tree.swf.Matrix
-    leg1: tree.swf.Matrix
-    leg2: tree.swf.Matrix
-    tail: tree.swf.Matrix
+    head: tuple[tree.swf.Matrix, int]
+    body: tuple[tree.swf.Matrix, int]
+    arm1: tuple[tree.swf.Matrix, int]
+    arm2: tuple[tree.swf.Matrix, int]
+    leg1: tuple[tree.swf.Matrix, int]
+    leg2: tuple[tree.swf.Matrix, int]
+    tail: tuple[tree.swf.Matrix, int]
 
     face: str
 
     extra: dict[str, tree.swf.Matrix]
 
     def __init__(self):
-        self.head = tree.swf.Matrix()
-        self.body = tree.swf.Matrix()
+        self.head = (tree.swf.Matrix(), 0)
+        self.body = (tree.swf.Matrix(), 0)
 
-        self.arm1 = tree.swf.Matrix()
+        self.arm1 = (tree.swf.Matrix(), 0)
 
-        self.arm2 = tree.swf.Matrix()
+        self.arm2 = (tree.swf.Matrix(), 0)
 
-        self.leg1 = tree.swf.Matrix()
-        self.leg2 = tree.swf.Matrix()
-        self.tail = tree.swf.Matrix()
+        self.leg1 = (tree.swf.Matrix(), 0)
+        self.leg2 = (tree.swf.Matrix(), 0)
+        self.tail = (tree.swf.Matrix(), 0)
 
         self.extra = {}
 
@@ -41,22 +41,22 @@ def catFrameFromObjs(objs: list[tree.PlacedObject]) -> CatFrame:
             if "_" in obj.name:
                 out.face = obj.name.removeprefix("head_")
             
-            out.head = obj.xform
+            out.head = (obj.xform, obj.depth)
             continue
 
         match obj.name:
             case "body":
-                out.body = obj.xform
+                out.body = (obj.xform, obj.depth)
             case "arm1":
-                out.arm1 = obj.xform
+                out.arm1 = (obj.xform, obj.depth)
             case "arm2":
-                out.arm2 = obj.xform
+                out.arm2 = (obj.xform, obj.depth)
             case "leg1":
-                out.leg1 = obj.xform
+                out.leg1 = (obj.xform, obj.depth)
             case "leg2":
-                out.leg2 = obj.xform
+                out.leg2 = (obj.xform, obj.depth)
             case "tail":
-                out.tail = obj.xform
+                out.tail = (obj.xform, obj.depth)
             case _:
                 out.extra[obj.name] = obj.xform
     

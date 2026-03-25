@@ -499,7 +499,7 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
     out = []
 
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
-    equip = getCatEquipment(partDir, catTree, None, None, None)
+    equip = getCatEquipment(partDir, catTree, "Banana", None, "Slime")
     outhead = headWithPose(cat, partDir, catTree, equip, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
@@ -507,41 +507,41 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
     for frame in anim:
         head = copy.deepcopy(outhead)
 
-        head.applyTransform(frame.head)
+        head.applyTransform(frame.head[0])
 
         colors = palettes[cat.palette]
         body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
-        body.applyTransform(frame.body)
+        body.applyTransform(frame.body[0])
         palette.applyPalette(colors, body.data)
 
         arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
-        arm1.applyTransform(frame.arm1)
+        arm1.applyTransform(frame.arm1[0])
         palette.applyPalette(colors, arm1.data)
 
         arm2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm2.frame, cat.arm2.texture))
-        arm2.applyTransform(frame.arm2)
+        arm2.applyTransform(frame.arm2[0])
         palette.applyPalette(colors, arm2.data)
 
         leg1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg1.frame, cat.leg1.texture))
-        leg1.applyTransform(frame.leg1)
+        leg1.applyTransform(frame.leg1[0])
         palette.applyPalette(colors, leg1.data)
 
         leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
-        leg2.applyTransform(frame.leg2)
+        leg2.applyTransform(frame.leg2[0])
         palette.applyPalette(colors, leg2.data)
 
         tail = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatTail"), cat.tail.frame, cat.tail.texture))
-        tail.applyTransform(frame.tail)
+        tail.applyTransform(frame.tail[0])
         palette.applyPalette(colors, tail.data)
 
         assembly = [
-            sprite.PlacedSprite(head, 0, 3, None, "Whole Head"),
-            sprite.PlacedSprite(body, 0, 0, None, "Body"),
-            sprite.PlacedSprite(arm1, 0, 4, None, "Right Arm"),
-            sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
-            sprite.PlacedSprite(leg1, 0, 2, None, "Right Leg"),
-            sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
-            sprite.PlacedSprite(tail, 0, -4, None, "Tail")
+            sprite.PlacedSprite(head, 0, frame.head[1], None, "Whole Head"),
+            sprite.PlacedSprite(body, 0, frame.body[1], None, "Body"),
+            sprite.PlacedSprite(arm1, 0, frame.arm1[1], None, "Right Arm"),
+            sprite.PlacedSprite(arm2, 0, frame.arm2[1], None, "Left Arm"),
+            sprite.PlacedSprite(leg1, 0, frame.leg1[1], None, "Right Leg"),
+            sprite.PlacedSprite(leg2, 0, frame.leg2[1], None, "Left Leg"),
+            sprite.PlacedSprite(tail, 0, frame.tail[1], None, "Tail")
         ]
 
         out.append(sprite.spriteFromPlacedObjects(partDir, catTree, assembly))
@@ -566,10 +566,10 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
 
     count = 0
     for cat in cats:
-        if ("BoomerCat" not in cat.id):
+        if ("WaterKitten" not in cat.id):
             continue
 
-        frames = assembleCat(cat, partDir, palettes, anims["dopeyIdleF"], catpartTree)
+        frames = assembleCat(cat, partDir, palettes, anims["cuteIdleF"], catpartTree)
         outfolder = f"{outdir}/{cat.id}"
         os.makedirs(outfolder, exist_ok=True)
 
