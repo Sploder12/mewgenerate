@@ -11,6 +11,8 @@ from .util import svg_tools as svg
 
 from .catgen import palette
 
+from . import items
+
 import copy
 import os
 import shutil
@@ -144,6 +146,26 @@ class FacePose:
 
         self.back = gondata.setdefault("back", False)
 
+class CatEquipment:
+    head_front : sprite.Sprite | None
+    head_back : sprite.Sprite | None
+
+    face_front : sprite.Sprite | None
+    face_back : sprite.Sprite | None
+
+    neck_front : sprite.Sprite | None
+    neck_back : sprite.Sprite | None
+
+    def __init__(self):
+        self.head_front = None
+        self.head_back = None
+        
+        self.face_front = None
+        self.face_back = None
+
+        self.neck_back = None
+        self.neck_front = None
+
 class CatFace:
     lbrow : sprite.Sprite | None
     rbrow : sprite.Sprite | None
@@ -236,19 +258,74 @@ def makeCatHead(cat: CustomCat, partDir: str, palettes: list[palette.Palette], c
 
         allParts += [face.mouth_closed, face.mouth_open, face.mouth_smile]
 
+    if (placements.headItem != None and placements.headItem.xform != None):
+        face.headItemXForm = placements.headItem.xform
+
+    if (placements.faceItem != None and placements.faceItem.xform != None):
+        face.faceItemXForm = placements.faceItem.xform
+
+    if (placements.neckItem != None and placements.neckItem.xform != None):
+        face.neckItemXForm = placements.neckItem.xform
+
     for part in allParts:
         palette.applyPalette(colors, part.data)
 
     return (placements.head.xform, face)
 
+ITEM_DICT = None
+
+def getCatEquipment(partDir: str, catTree: swf.SWF_Tree, head: str | None, face: str | None, neck: str | None) -> CatEquipment:
+    global ITEM_DICT
+
+    out = CatEquipment()
+
+    if (ITEM_DICT == None):
+        ITEM_DICT = items.getItemDict()
+
+    if (head != None):
+        idata = ITEM_DICT[head]
+        frame = idata.frame - 1
+
+        fronts = catTree.get("HeadItemF")
+        backs = catTree.get("HeadItemB")
+
+        out.head_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts.frames[frame].objs)
+        out.head_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs.frames[frame].objs)
+
+    if (face != None):
+        idata = ITEM_DICT[face]
+        frame = idata.frame - 1
+
+        fronts = catTree.get("FaceItemF")
+        backs = catTree.get("FaceItemB")
+
+        out.face_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts.frames[frame].objs)
+        out.face_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs.frames[frame].objs)
+
+    if (neck != None):
+        idata = ITEM_DICT[neck]
+        frame = idata.frame - 1
+
+        fronts = catTree.get("NeckItemF")
+        backs = catTree.get("NeckItemB")
+
+        out.neck_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts.frames[frame].objs)
+        out.neck_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs.frames[frame].objs)
+
+    return out
+
+
 # palette and base position should be applied before this
-def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacement: swf.swf.Matrix, face: CatFace, pose: FacePose, palettes: list[palette.Palette]):
+def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, equipment: CatEquipment, face: CatFace, pose: FacePose, palettes: list[palette.Palette]):
     # don't want to deal with Python's nonsense reference semantics
     head = copy.deepcopy(catpart.getCatHeadShape(partDir, catTree, catTree.get("CatHead"), cat.head.frame, cat.texture, pose.offset))
-    head.applyTransform(headPlacement)
+    #headPlacement.yoffset -= 10
+    #head.applyTransform(headPlacement)
+    
     palette.applyPalette(palettes[cat.palette], head.data)
 
     face = copy.deepcopy(face)
+    equipment = copy.deepcopy(equipment)
 
     HEAD_DEPTH = 10
     
@@ -267,6 +344,33 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, headPlacem
     onlyoffset = swf.swf.Matrix()
     onlyoffset.xoffset = pose.offset[0]
     onlyoffset.yoffset = -pose.offset[1]
+
+    if (pose.back):
+        if (equipment.head_back != None):
+            equipment.head_back.applyTransform(face.headItemXForm)
+            assembly.append(sprite.PlacedSprite(equipment.head_back, 0, HEAD_DEPTH + 6, None, "Head Item"))
+
+        if (equipment.face_back != None):
+            equipment.face_back.applyTransform(face.faceItemXForm)
+            equipment.face_back.applyTransform(onlyoffset)
+            assembly.append(sprite.PlacedSprite(equipment.face_back, 0, HEAD_DEPTH + 8, None, "Face Item"))
+        
+        if (equipment.neck_back != None):
+            equipment.neck_back.applyTransform(face.neckItemXForm)
+            assembly.append(sprite.PlacedSprite(equipment.neck_back, 0, HEAD_DEPTH - 1, None, "Neck Item"))
+    else:
+        if (equipment.head_front != None):
+            equipment.head_front.applyTransform(face.headItemXForm)
+            assembly.append(sprite.PlacedSprite(equipment.head_front, 0, HEAD_DEPTH + 6, None, "Head Item"))
+
+        if (equipment.face_front != None):
+            equipment.face_front.applyTransform(face.faceItemXForm)
+            equipment.face_front.applyTransform(onlyoffset)
+            assembly.append(sprite.PlacedSprite(equipment.face_front, 0, HEAD_DEPTH + 8, None, "Face Item"))
+        
+        if (equipment.neck_front != None):
+            equipment.neck_front.applyTransform(face.headItemXForm)
+            assembly.append(sprite.PlacedSprite(equipment.neck_front, 0, HEAD_DEPTH - 1, None, "Neck Item"))
 
     if (face.lear != None):
         xform = swf.swf.Matrix()
@@ -385,7 +489,8 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
     out = []
 
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
-    outhead = headWithPose(cat, partDir, catTree, headx, face, FacePose({
+    equip = getCatEquipment(partDir, catTree, None, "HuntersPatch", None)
+    outhead = headWithPose(cat, partDir, catTree, equip, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
 
@@ -429,9 +534,9 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
         assembly = [
             sprite.PlacedSprite(head, 0, 5, None, "Whole Head"),
             sprite.PlacedSprite(body, 0, 0, None, "Body"),
-            sprite.PlacedSprite(arm1, 0, 2, None, "Right Arm"),
+            sprite.PlacedSprite(arm1, 0, 3, None, "Right Arm"),
             sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
-            sprite.PlacedSprite(leg1, 0, 3, None, "Right Leg"),
+            sprite.PlacedSprite(leg1, 0, 2, None, "Right Leg"),
             sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
             sprite.PlacedSprite(tail, 0, -4, None, "Tail")
         ]
@@ -440,6 +545,10 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
   
     return out
    
+from wand.image import Image
+from wand.color import Color
+
+
 def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[CustomCat], outdir: str):
     partDir = ffdec.exportShapesIfNeeded(ffdecPath, catpart.CATPARTS_SWF)
     palettes = palette.loadPalettes("./data/textures/palette.png")
@@ -454,16 +563,53 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
 
     count = 0
     for cat in cats:
-        frames = assembleCat(cat, partDir, palettes, anims["idleF"], catpartTree)
+        if ("HunterCat_" not in cat.id):
+            continue
+
+        frames = assembleCat(cat, partDir, palettes, anims["HunterIdleF"], catpartTree)
         outfolder = f"{outdir}/{cat.id}"
         os.makedirs(outfolder, exist_ok=True)
 
-        for i in range(len(frames)):
-            outfile = f"{outfolder}/{i}.svg"
-            with open(outfile, "w") as ocat:
-                ocat.write(frames[i].compile())
+        # hacky solution to put the cat in frame...
+        translate = swf.swf.Matrix()
+        translate.xoffset = 90
+        translate.yoffset = 50
 
-            svgCropper.crop(outfile, outfile)
+        scaling = 3.0
+
+        with Color('transparent') as bg:
+            with Image(background=bg) as gif:
+                for i in range(len(frames)):
+                    outfile = f"{outfolder}/{i}.svg"
+                    
+                    frames[i].applyTransform(translate)
+                    svgData = frames[i].compile()
+
+                    if (i == 0):
+                        with open(outfile, "w") as ocat:
+                            ocat.write(svgData)
+
+                        
+
+                    with Image(blob=svgData.encode("utf-8"), background=bg, resolution=72 * scaling) as frame:
+                        frame.delay = 2
+                        frame.dispose = "background"
+                        gif.sequence.append(frame)
+
+                        if (i == 0):
+                            frame.trim()
+                            frame.format = 'png'
+                            frame.save(filename=outfile.removesuffix(".svg") + ".png")
+                            return 1
+
+                    #svgCropper.cropForAnimation(outfile, outfile)
+
+                gif.type = "optimize"
+                gif.loop = 0
+                gif.coalesce()
+                gif.trim() # this doesn't work :)
+                gif.save(filename=f"{outfolder}/animation.gif")
+
 
         count += 1
 

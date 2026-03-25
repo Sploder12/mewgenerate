@@ -86,6 +86,19 @@ def getItems() -> list[Item]:
 
     return items
 
+def getItemDict() -> dict[str, Item]:
+    items: dict[str, Item] = {}
+    for gonname in ITEMS_GONS + ["enemy_items.gon"]:
+        gondata = gon.parse_gon(ITEMS_FOLDER + '/' + gonname)
+        for name, data in gondata.items():
+            if (name == "__COMMENTS__" or data == None):
+                continue
+
+            items[name] = Item(name, data)
+
+    return items
+
+
 def exportItems(svgCropper: svg.SvgCropper, ffdecPath: str, items: list[Item], outfolder = "./out") -> int:
     dumpdir = ffdec.exportSpritesIfNeeded(ffdecPath, ITEMS_SWF, ffdec.SWF_DUMP_DIR)
 

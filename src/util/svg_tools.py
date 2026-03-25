@@ -7,7 +7,6 @@ import shutil
 
 from typing import Any, Callable, Self
 
-
 def defaultDuplicateHandler(filename: str) -> str:
     name, ext = os.path.splitext(filename)
     
@@ -51,7 +50,8 @@ class SvgCropper:
         self.finish()
         return False
 
-    def crop(self, src: str, dst: str):
+    @staticmethod
+    def checkFile(src: str, dst: str):
         if (not os.path.isfile(src)):
             # exception is far better than uncapturable stderr
             raise FileNotFoundError(f"{src} is not an existing file")
@@ -61,12 +61,26 @@ class SvgCropper:
 
         if (os.path.getsize(src) <= 1):
             logging.warning(f"{src} is an empty file")
+            return False
+    
+        return True
+
+    def crop(self, src: str, dst: str):
+        if (not self.checkFile(src, dst)):
             return
 
         data = f"file-open:{src}\nexport-margin:5\nexport-area-drawing\nexport-filename:{dst}\nexport-do\nfile-close\n"
 
         self.process.stdin.write(data.encode())
         #self.process.stdin.flush()
+
+    def cropForAnimation(self, src: str, dst: str):
+        if (not self.checkFile(src, dst)):
+            return
+
+        data = f"file-open:{src}\nexport-width:256\nexport-area:-127:-127:126:126\nexport-filename:{dst}\nexport-do\nfile-close\n"
+
+        self.process.stdin.write(data.encode())
 
     def crop_handle_duplicate(self, src: str, dst: str, onDuplicate: Callable[[str], str] = defaultDuplicateHandler):
         try:
