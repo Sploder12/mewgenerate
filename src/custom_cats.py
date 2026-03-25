@@ -286,21 +286,31 @@ def getCatEquipment(partDir: str, catTree: swf.SWF_Tree, head: str | None, face:
         idata = ITEM_DICT[head]
         frame = idata.frame - 1
 
-        fronts = catTree.get("HeadItemF")
-        backs = catTree.get("HeadItemB")
+        fronts = catTree.get("HeadItemF").frames[frame].objs
+        backs = catTree.get("HeadItemB").frames[frame].objs
 
-        out.head_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts.frames[frame].objs)
-        out.head_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs.frames[frame].objs)
+        frontKeep = []
+        for obj in fronts:
+            if obj.name != "aux":
+                frontKeep.append(obj)
+
+        backKeep = []
+        for obj in backs:
+            if obj.name != "aux":
+                backKeep.append(obj)
+
+        out.head_front = sprite.spriteFromPlacedObjects(partDir, catTree, frontKeep)
+        out.head_back = sprite.spriteFromPlacedObjects(partDir, catTree, backKeep)
 
     if (face != None):
         idata = ITEM_DICT[face]
         frame = idata.frame - 1
 
-        fronts = catTree.get("FaceItemF")
-        backs = catTree.get("FaceItemB")
+        fronts = catTree.get("FaceItemF").frames[frame].objs
+        backs = catTree.get("FaceItemB").frames[frame].objs
 
-        out.face_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts.frames[frame].objs)
-        out.face_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs.frames[frame].objs)
+        out.face_front = sprite.spriteFromPlacedObjects(partDir, catTree, fronts)
+        out.face_back = sprite.spriteFromPlacedObjects(partDir, catTree, backs)
 
     if (neck != None):
         idata = ITEM_DICT[neck]
@@ -369,7 +379,7 @@ def headWithPose(cat: CustomCat, partDir: str, catTree: swf.SWF_Tree, equipment:
             assembly.append(sprite.PlacedSprite(equipment.face_front, 0, HEAD_DEPTH + 8, None, "Face Item"))
         
         if (equipment.neck_front != None):
-            equipment.neck_front.applyTransform(face.headItemXForm)
+            equipment.neck_front.applyTransform(face.neckItemXForm)
             assembly.append(sprite.PlacedSprite(equipment.neck_front, 0, HEAD_DEPTH - 1, None, "Neck Item"))
 
     if (face.lear != None):
@@ -489,23 +499,21 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
     out = []
 
     headx, face = makeCatHead(cat, partDir, palettes, catTree)
-    equip = getCatEquipment(partDir, catTree, None, "HuntersPatch", None)
+    equip = getCatEquipment(partDir, catTree, None, None, None)
     outhead = headWithPose(cat, partDir, catTree, equip, face, FacePose({
             "face_offset": [10, 0]
         }), palettes)
 
     for frame in anim:
         head = copy.deepcopy(outhead)
-        head.applyTransform(frame.head)
 
-        # @TODO items
+        head.applyTransform(frame.head)
 
         colors = palettes[cat.palette]
         body = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatBody"), cat.body.frame, cat.body.texture))
         body.applyTransform(frame.body)
         palette.applyPalette(colors, body.data)
 
-        # left/right arms and legs are flipped @TODO fix that :)
         arm1 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.arm1.frame, cat.arm1.texture))
         arm1.applyTransform(frame.arm1)
         palette.applyPalette(colors, arm1.data)
@@ -518,7 +526,6 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
         leg1.applyTransform(frame.leg1)
         palette.applyPalette(colors, leg1.data)
 
-
         leg2 = copy.deepcopy(catpart.getCatComponent(partDir, catTree, catTree.get("CatLeg"), cat.leg2.frame, cat.leg2.texture))
         leg2.applyTransform(frame.leg2)
         palette.applyPalette(colors, leg2.data)
@@ -527,14 +534,10 @@ def assembleCat(cat: CustomCat, partDir: str, palettes: list[palette.Palette], a
         tail.applyTransform(frame.tail)
         palette.applyPalette(colors, tail.data)
 
-
-        # @TODO body, animations, etc...
-
-
         assembly = [
-            sprite.PlacedSprite(head, 0, 5, None, "Whole Head"),
+            sprite.PlacedSprite(head, 0, 3, None, "Whole Head"),
             sprite.PlacedSprite(body, 0, 0, None, "Body"),
-            sprite.PlacedSprite(arm1, 0, 3, None, "Right Arm"),
+            sprite.PlacedSprite(arm1, 0, 4, None, "Right Arm"),
             sprite.PlacedSprite(arm2, 0, -2, None, "Left Arm"),
             sprite.PlacedSprite(leg1, 0, 2, None, "Right Leg"),
             sprite.PlacedSprite(leg2, 0, -3, None, "Left Leg"),
@@ -563,10 +566,10 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
 
     count = 0
     for cat in cats:
-        if ("HunterCat_" not in cat.id):
+        if ("BoomerCat" not in cat.id):
             continue
 
-        frames = assembleCat(cat, partDir, palettes, anims["HunterIdleF"], catpartTree)
+        frames = assembleCat(cat, partDir, palettes, anims["dopeyIdleF"], catpartTree)
         outfolder = f"{outdir}/{cat.id}"
         os.makedirs(outfolder, exist_ok=True)
 
@@ -600,7 +603,7 @@ def exportCustomCats(svgCropper: svg.SvgCropper, ffdecPath: str, cats: list[Cust
                             frame.trim()
                             frame.format = 'png'
                             frame.save(filename=outfile.removesuffix(".svg") + ".png")
-                            return 1
+                            #return 1
 
                     #svgCropper.cropForAnimation(outfile, outfile)
 
