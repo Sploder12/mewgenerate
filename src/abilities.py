@@ -123,7 +123,8 @@ def exportPassives(svgCropper: svg.SvgCropper, ffdecPath: str, passives: list[Pa
     for passive in passives:
         passive.resolve()
         src = os.path.join(dumpdir, f"{passive.frame}.svg")
-        dst = os.path.join(outfolder, f'ABILITY {passive.name.replace("?", "%3F")}.svg')
+        aname = passive.name.replace("?", "%3F")
+        dst = os.path.join(outfolder, f'ABILITY {aname}.svg')
         svgCropper.crop_handle_duplicate(src, dst)
         count += 1
 
