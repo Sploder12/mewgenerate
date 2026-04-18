@@ -198,7 +198,7 @@ def exportEvents(events: dict[str, Event], outfolder = "./out"):
                             enemies.append(d["object"])
 
 
-                    summary.write(f": {', '.join(enemies)}")
+                    summary.write(f': {", ".join(enemies)}')
                 summary.write('\n')
 
             summary.write('\n')

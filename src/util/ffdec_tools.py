@@ -49,7 +49,7 @@ def dumpProduce(ffdecPath: str, swfPath: str, outDir: str):
                         break
 
     if (needsExport):
-        logging.debug(f"cache miss {"(forced) " if FORCE_REDUMP else ''}for {swfPath}")
+        logging.debug(f'cache miss {"(forced) " if FORCE_REDUMP else ""}for {swfPath}')
         start = datetime.now()
         code, _, stderr = export(ffdecPath, swfPath, ["shape", "text"], outDir)
         if (len(stderr) > 0):

@@ -173,7 +173,7 @@ def exportActives(svgCropper: svg.SvgCropper, ffdecPath: str, actives: list[Acti
     for active in actives:
         active.resolve()
         src = os.path.join(dumpdir, f"{active.frame}.svg")
-        dst = os.path.join(outfolder, f"ABILITY {active.name.replace('?', "%3F")}.svg")
+        dst = os.path.join(outfolder, f'ABILITY {active.name.replace("?", "%3F")}.svg')
         svgCropper.crop_handle_duplicate(src, dst)
         count += 1
 
